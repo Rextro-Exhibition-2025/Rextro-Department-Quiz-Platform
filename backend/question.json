@@ -1,0 +1,34 @@
+{
+
+"question": "",
+"questionImage": "",
+"quizId": 0,
+"options": [
+
+    {
+        
+        "option":"A",
+        "optionText": "",
+        "optionImage": ""
+    },
+    {
+       
+        "option":"B",
+        "optionText": "",
+        "optionImage": ""
+    },
+    {
+        
+        "option":"C",
+        "optionText": "",
+        "optionImage": ""
+    },
+    {
+        "option":"D",
+        "optionText": "",
+        "optionImage":""
+    }
+],
+"correctOption": "A"
+
+}
