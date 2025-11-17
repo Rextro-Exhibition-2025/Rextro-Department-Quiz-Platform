@@ -1,0 +1,503 @@
+openapi: 3.0.3
+info:
+  title: Rextro Quiz Platform API
+  description: Backend API for the quiz platform with authentication, quiz management, and violation tracking
+  version: 1.0.0
+  contact:
+    email: rmkavindudhananjaya@gmail.com
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+  - url: http://localhost:3000/api
+    description: Alternative development server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management
+  - name: Questions
+    description: Question management
+  - name: Quizzes
+    description: Quiz management
+  # Violations removed
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - name
+        - password
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        password:
+          type: string
+          example: "secret_password"
+
+    UpdateStateRequest:
+      type: object
+      required:
+        - name
+        - hasEndedQuiz
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        hasEndedQuiz:
+          type: boolean
+          example: true
+
+
+    Question:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        question:
+          type: string
+          example: "What is the capital of France?"
+        image:
+          type: string
+          nullable: true
+          example: "https://example.com/image.jpg"
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "a"
+              text:
+                type: string
+                nullable: true
+                example: "Paris"
+              image:
+                type: string
+                nullable: true
+                example: "https://example.com/answer.jpg"
+        correctAnswer:
+          type: string
+          example: "a"
+
+    Quiz:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        title:
+          type: string
+          example: "General Knowledge Quiz"
+        description:
+          type: string
+          example: "A quiz covering various topics"
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-05T10:00:00Z"
+
+    Violation:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        userId:
+          type: string
+          example: "64f1a2b3c4d5e6f7g8h9i0j1"
+        name:
+          type: string
+          example: "John Doe"
+        violationType:
+          type: string
+          enum: ["copy & paste", "escaping full screen", "tab switching"]
+          example: "copy & paste"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-10-05T10:30:00Z"
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate a team member with credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/update-state:
+    put:
+      tags:
+        - Authentication
+      summary: Update user quiz state
+      description: Update whether a user has started or ended the quiz
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStateRequest'
+      responses:
+        '200':
+          description: State updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Quiz state updated successfully"
+                  data:
+                    type: object
+                    properties:
+                        name:
+                          type: string
+                          example: "John Doe"
+                        hasEndedQuiz:
+                          type: boolean
+                          example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+  /quizzes/{id}:
+    get:
+      tags:
+        - Quizzes
+      summary: Get quiz by ID
+      description: Retrieve a specific quiz with its questions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Quiz ID
+          example: "1"
+      responses:
+        '200':
+          description: Successfully retrieved quiz
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  quiz:
+                    $ref: '#/components/schemas/Quiz'
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /questions:
+    get:
+      tags:
+        - Questions
+      summary: Get all questions
+      description: Retrieve all questions (admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Questions
+      summary: Create a new question
+      description: Create a new quiz question (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      responses:
+        '201':
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Question'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /violations:
+    post:
+      tags:
+        - Violations
+      summary: Report a violation
+      description: Report a quiz violation (copy/paste, tab switching, etc.)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - memberName
+                - violationType
+              properties:
+                userId:
+                  type: string
+                  example: "64f1a2b3c4d5e6f7g8h9i0j1"
+                memberName:
+                  type: string
+                  example: "John Doe"
+                violationType:
+                  type: string
+                  enum: ["copy & paste", "escaping full screen", "tab switching"]
+                  example: "copy & paste"
+      responses:
+        '201':
+          description: Violation reported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Violation'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Violations
+      summary: Get all violations
+      description: Retrieve all reported violations (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+          description: Filter by user ID
+        - name: violationType
+          in: query
+          schema:
+            type: string
+            enum: ["copy & paste", "escaping full screen", "tab switching"]
+          description: Filter by violation type
+      responses:
+        '200':
+          description: Successfully retrieved violations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Violation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /violations/count:
+    get:
+      tags:
+        - Violations
+      summary: Count violations for a team member
+      description: Get the count of violations for a specific team member
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: memberName
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Member name
+      responses:
+        '200':
+          description: Successfully retrieved violation count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Retrieve all users (admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
