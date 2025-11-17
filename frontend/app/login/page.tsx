@@ -203,7 +203,7 @@ export default function LoginPage() {
             <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center mb-3 shadow-lg">
               <LogIn className="w-7 h-7 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-[#651321] mb-1">Student Login</h2>
+            <h2 className="text-2xl font-bold text-[#651321] mb-1">User Login</h2>
             <p className="text-sm text-[#651321] opacity-80">Enter your credentials to start the quiz</p>
           </div>
 
@@ -218,7 +218,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Mode toggle */}
             <div className="flex justify-between items-center mb-2">
-              <div className="text-sm text-gray-600">{isRegistering ? 'Register a new student' : 'Student Login'}</div>
+              <div className="text-sm text-gray-600">{isRegistering ? 'Register a new user' : 'User Login'}</div>
               <button
                 type="button"
                 onClick={() => setIsRegistering(prev => !prev)}
