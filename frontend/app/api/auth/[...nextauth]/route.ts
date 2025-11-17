@@ -11,11 +11,24 @@ const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    // On Google sign-in, attempt to link to an existing registered user by email
+    // On Google sign-in, allow admin emails (from ADMIN_EMAILS) to sign in
+    // without requiring the backend link check. For student accounts, keep
+    // the existing backend `/auth/oauth/link` check.
     async signIn({ user, account }) {
       console.log('Auth signIn callback invoked');
 
       if (account?.provider === 'google' && user.email) {
+        // Normalize admin emails list from env
+        const adminEmailsRaw = process.env.ADMIN_EMAILS || '';
+        const adminEmails = adminEmailsRaw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+        const isAdminEmail = adminEmails.includes(user.email.toLowerCase());
+
+        // If this is an admin email, allow sign-in immediately so admin flows
+        // are handled by the admin UI (and won't be blocked by backend link checks).
+        if (isAdminEmail) {
+          return true;
+        }
+
         try {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
           const resp = await fetch(`${apiUrl}/auth/oauth/link`, {
@@ -106,7 +119,10 @@ const authOptions: AuthOptions = {
   },
   pages: {
     signIn: '/admin/login',
-    error: '/admin/login',
+    // Use a small server-side redirector so we can send admin-originated
+    // OAuth errors back to the admin login UI while keeping student errors
+    // routed to the student login page.
+    error: '/api/auth/error-redirect',
   },
   session: {
     strategy: 'jwt',

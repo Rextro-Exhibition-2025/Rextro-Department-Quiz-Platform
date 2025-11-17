@@ -8,9 +8,10 @@ import { usePathname } from "next/navigation";
 import AdminMenu from "./AdminMenu";
 
 // Dropdown for Admin Portal
-import { signIn } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { Shield, Menu, X } from "lucide-react";
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -132,19 +133,40 @@ const AdminPortalDropdown = ({ session, mobile = false }: { session: any; mobile
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  const router = useRouter();
+
   const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      setError("");
-      const result = await signIn("google", {
-        callbackUrl: "/manage-questions",
-        redirect: false,
-      });
-      if (result?.error) {
-        setError("Access Denied: You don't have permission to access the admin panel. Only authorized email addresses can log in as admin.");
+      // Mark this OAuth attempt as coming from the admin UI so the
+      // server-side error redirect can send users back to `/admin/login`
+      // instead of the global student `/login` page.
+      try {
+        document.cookie = `oauth_origin=admin; path=/; max-age=${60}`;
+      } catch (e) {
+        // ignore in non-browser contexts
       }
-    } catch (error) {
-      setError("An error occurred during authentication. Please try again.");
+      const res = await signIn('google', { callbackUrl: '/manage-questions', redirect: false });
+
+      // If next-auth returned an error, go to admin login so AdminLoginClient
+      // can show the inline error and allow retry.
+      if ((res as any)?.error) {
+        const code = encodeURIComponent((res as any).error || 'AccessDenied');
+        // Send user to the admin login with the error code so AdminLoginClient
+        // shows the inline message. Clear the origin cookie will be handled
+        // server-side by the error redirect endpoint.
+        router.push(`/admin/login?error=${code}`);
+        return;
+      }
+
+      // If a URL was returned, navigate there (this sends user to provider)
+      if ((res as any)?.url) {
+        window.location.href = (res as any).url;
+      }
+    } catch (e) {
+      console.error('NavBar Google sign-in failed:', e);
+      router.push('/admin/login');
     } finally {
       setLoading(false);
     }

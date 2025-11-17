@@ -1,13 +1,14 @@
 import type { Request, Response } from "express";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import bcrypt from 'bcryptjs';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, studentId, email } = req.body;
+        const { name, studentId, email, password } = req.body;
 
-        if (!name || !studentId || !email) {
-            res.status(400).json({ success: false, message: 'Name, studentId and email are required' });
+        if (!name || !studentId || !email || !password) {
+            res.status(400).json({ success: false, message: 'Name, studentId, email and password are required' });
             return;
         }
 
@@ -25,7 +26,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const user = await User.create({ name, studentId, email, authProvider: 'local' });
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const user = await User.create({ name, studentId, email, authProvider: 'local', passwordHash });
 
         const token = jwt.sign({ id: user._id, studentId: user.studentId }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
 
@@ -126,3 +131,51 @@ export const linkGoogleAccount = async (req: Request, res: Response): Promise<vo
         res.status(500).json({ success: false, message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
     }
 }
+
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            res.status(400).json({ success: false, message: 'Email and password are required' });
+            return;
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        if (!user.passwordHash) {
+            res.status(400).json({ success: false, message: 'No password set for this account. Please sign in with Google.' });
+            return;
+        }
+
+        const match = await bcrypt.compare(password, user.passwordHash);
+        if (!match) {
+            res.status(400).json({ success: false, message: 'Invalid credentials' });
+            return;
+        }
+
+        const token = jwt.sign(
+            { id: user._id, studentId: user.studentId, email: user.email, name: user.name },
+            process.env.JWT_SECRET || 'dev-secret',
+            { expiresIn: '7d' }
+        );
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        };
+
+        res.cookie('authToken', token, cookieOptions);
+
+        res.status(200).json({ success: true, data: { id: user._id, studentId: user.studentId, name: user.name } });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+};
