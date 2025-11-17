@@ -5,13 +5,12 @@ import { useSession } from "next-auth/react";
 import { Save, Trash2 } from "lucide-react";
 import { createAdminApi } from "@/interceptors/admins";
 import transformQuizApiQuestion from "../manage-questions/questionTransformer";
-import { QUIZ_SETS } from '@/constants/quizSets';
 import { Question, QuestionApiResponse } from "@/types/quiz";
 import { transformQuestionToApi } from "./questionTransformer";
 import ImageUploadPreview from "@/components/ImageUpload/ImageUploadPreview";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "@/lib/cloudinaryService";
 
-// Error modal state for alerts
+
 
 
 type ErrorModalState = { open: boolean; message: string };
@@ -25,7 +24,7 @@ function EditQuestionContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [question, setQuestion] = useState<Question | null>(null);
-  const [originalQuestion, setOriginalQuestion] = useState<Question | null>(null); // Store original for comparison
+  const [originalQuestion, setOriginalQuestion] = useState<Question | null>(null); 
   const [loading, setLoading] = useState(true);
   const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,7 +35,7 @@ function EditQuestionContent() {
   const [isDeleting, setIsDeleting] = useState(false);
   const questionId = searchParams.get("id");
   
-  // Track pending image changes (files to upload, URLs to delete)
+  
   const [pendingImageChanges, setPendingImageChanges] = useState<{
     questionImage?: { action: 'upload' | 'delete', file?: File, oldUrl?: string };
     answers: Record<string, { action: 'upload' | 'delete', file?: File, oldUrl?: string }>;
@@ -44,20 +43,40 @@ function EditQuestionContent() {
     answers: {}
   });
   
-  // Track Cloudinary publicIds for uploaded images
+  
   const [uploadedImageIds, setUploadedImageIds] = useState<{
     questionImage?: string;
-    answers: Record<string, string>; // answerId -> publicId
+    answers: Record<string, string>; 
   }>({
     answers: {}
   });
 
+    const [quizSets, setQuizSets] = useState<{ quizId: number; name: string }[]>([]);
+
+    useEffect(() => {
+      if (status === 'authenticated') {
+        (async () => {
+          try {
+            const api = await createAdminApi();
+            const resp = await api.get('/quizzes/get-quiz-sets');
+            if (resp && resp.data) {
+              const body: any = resp.data as any;
+              const sets = Array.isArray(body) ? body as { quizId: number; name: string }[] : (body?.data ?? []) as { quizId: number; name: string }[];
+              setQuizSets(sets);
+            }
+          } catch (err) {
+            console.error('Failed to fetch quiz sets', err);
+          }
+        })();
+      }
+    }, [status]);
 
 
-  // Helper function to extract publicId from Cloudinary URL
+
+  
   const extractPublicIdFromUrl = (url: string): string | null => {
     try {
-      // Cloudinary URL format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{public_id}.{format}
+      
       const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
       return matches ? matches[1] : null;
     } catch {
@@ -71,7 +90,7 @@ function EditQuestionContent() {
     }
   }, [status, router]);
 
-  // Detect changes in question data
+  
   useEffect(() => {
     if (question && originalQuestion) {
       const hasChanges = JSON.stringify(question) !== JSON.stringify(originalQuestion);
@@ -79,12 +98,12 @@ function EditQuestionContent() {
     }
   }, [question, originalQuestion]);
 
-  // Warn user before leaving page with unsaved changes
+  
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = ''; // Chrome requires returnValue to be set
+        e.returnValue = ''; 
       }
     };
 
@@ -112,7 +131,7 @@ function EditQuestionContent() {
 
         const loadedQuestion = transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data);
         
-        // Convert QuestionItem to Question format (questionImage -> image)
+        
         const convertedQuestion: Question = {
           id: loadedQuestion.id,
           question: loadedQuestion.question,
@@ -129,9 +148,9 @@ function EditQuestionContent() {
         };
         
         setQuestion(convertedQuestion);
-        setOriginalQuestion(JSON.parse(JSON.stringify(convertedQuestion))); // Deep clone for comparison
+        setOriginalQuestion(JSON.parse(JSON.stringify(convertedQuestion))); 
         
-        // Extract and store publicIds from existing images
+        
         const newUploadedImageIds: {
           questionImage?: string;
           answers: Record<string, string>;
@@ -183,7 +202,7 @@ function EditQuestionContent() {
     return <div className="text-center mt-10 text-gray-500">Question not found.</div>;
   }
 
-  // Validation and save logic (copied from Add Question)
+  
   const handleSave = async (): Promise<void> => {
     if (!question) return;
     if (!question.question.trim()) {
@@ -191,7 +210,7 @@ function EditQuestionContent() {
       return;
     }
     
-    // Validate that ALL 4 answers have either text or image
+    
     const emptyAnswers = question.answers.filter(answer => 
       !answer?.text?.trim() && !answer?.image?.trim()
     );
@@ -209,7 +228,7 @@ function EditQuestionContent() {
       setErrorModal({ open: true, message: 'Please select the correct answer.' });
       return;
     }
-    // Validate that the selected correct answer is not empty
+    
     const correct = question.answers.find(a => a.id === question.correctAnswer);
     if (!correct || (!correct?.text?.trim() && !correct?.image?.trim())) {
       setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
@@ -225,20 +244,20 @@ function EditQuestionContent() {
       setShowSaveConfirm(true);
       const api = await createAdminApi();
       
-      // Process image changes before saving
-      const updatedQuestion = { ...question };
-      const newUploadedPublicIds: string[] = []; // Track newly uploaded images for rollback
       
-      // Handle question image
+      const updatedQuestion = { ...question };
+      const newUploadedPublicIds: string[] = []; 
+      
+      
       if (pendingImageChanges.questionImage) {
         if (pendingImageChanges.questionImage.action === 'upload' && pendingImageChanges.questionImage.file) {
-          // Upload new image
+          
           const { url, publicId } = await uploadImageToCloudinary(pendingImageChanges.questionImage.file, 'department-quiz/quiz-questions');
           updatedQuestion.image = url;
           updatedQuestion.imagePublicId = publicId;
-          newUploadedPublicIds.push(publicId); // Track for rollback
+          newUploadedPublicIds.push(publicId); 
           
-          // Delete old image if exists
+          
           if (pendingImageChanges.questionImage.oldUrl) {
             const oldPublicId = extractPublicIdFromUrl(pendingImageChanges.questionImage.oldUrl);
             if (oldPublicId) {
@@ -248,7 +267,7 @@ function EditQuestionContent() {
             }
           }
         } else if (pendingImageChanges.questionImage.action === 'delete') {
-          // Delete existing image
+          
           if (pendingImageChanges.questionImage.oldUrl) {
             const oldPublicId = extractPublicIdFromUrl(pendingImageChanges.questionImage.oldUrl);
             if (oldPublicId) {
@@ -262,19 +281,19 @@ function EditQuestionContent() {
         }
       }
       
-      // Handle answer images
+      
       for (const [answerId, change] of Object.entries(pendingImageChanges.answers)) {
         const answerIndex = updatedQuestion.answers.findIndex(a => a.id === answerId);
         if (answerIndex === -1) continue;
         
         if (change.action === 'upload' && change.file) {
-          // Upload new image
+          
           const { url, publicId } = await uploadImageToCloudinary(change.file, 'department-quiz/quiz-answers');
           updatedQuestion.answers[answerIndex].image = url;
           updatedQuestion.answers[answerIndex].imagePublicId = publicId;
-          newUploadedPublicIds.push(publicId); // Track for rollback
+          newUploadedPublicIds.push(publicId); 
           
-          // Delete old image if exists
+          
           if (change.oldUrl) {
             const oldPublicId = extractPublicIdFromUrl(change.oldUrl);
             if (oldPublicId) {
@@ -284,7 +303,7 @@ function EditQuestionContent() {
             }
           }
         } else if (change.action === 'delete') {
-          // Delete existing image
+          
           if (change.oldUrl) {
             const oldPublicId = extractPublicIdFromUrl(change.oldUrl);
             if (oldPublicId) {
@@ -306,14 +325,14 @@ function EditQuestionContent() {
       try {
         await api.put(`/questions/${updatedQuestion.id}`, transformedQuestion);
         
-        // Reset pending changes and unsaved changes flag after successful save
+        
         setPendingImageChanges({ answers: {} });
         setHasUnsavedChanges(false);
-        setOriginalQuestion(JSON.parse(JSON.stringify(updatedQuestion))); // Update original to current
+        setOriginalQuestion(JSON.parse(JSON.stringify(updatedQuestion))); 
         
         router.push("/manage-questions");
       } catch (dbError) {
-        // Database save failed - rollback newly uploaded images
+        
         console.error('Database save failed, rolling back newly uploaded images:', dbError);
         for (const publicId of newUploadedPublicIds) {
           try {
@@ -323,7 +342,7 @@ function EditQuestionContent() {
             console.error('Failed to rollback image:', publicId, deleteError);
           }
         }
-        throw dbError; // Re-throw to be caught by outer catch
+        throw dbError; 
       }
 
     } catch (error) {
@@ -335,7 +354,7 @@ function EditQuestionContent() {
     }
   };
 
-  // Delete logic
+  
   const handleDelete = async () => {
     if (!question) return;
     
@@ -343,11 +362,11 @@ function EditQuestionContent() {
       setIsDeleting(true);
       const api = await createAdminApi();
       
-      // Delete the question from the database first
+      
       await api.delete(`/questions/${question.id}`);
       
-      // Then delete images from Cloudinary
-      // Delete question image if exists
+      
+      
       if (question.image) {
         const publicId = uploadedImageIds.questionImage || extractPublicIdFromUrl(question.image);
         if (publicId) {
@@ -358,7 +377,7 @@ function EditQuestionContent() {
         }
       }
       
-      // Delete answer images if exist
+      
       for (const answer of question.answers) {
         if (answer.image) {
           const publicId = uploadedImageIds.answers[answer.id] || extractPublicIdFromUrl(answer.image);
@@ -372,7 +391,7 @@ function EditQuestionContent() {
       }
       
       setShowDeleteConfirm(false);
-      setHasUnsavedChanges(false); // Clear flag before navigation
+      setHasUnsavedChanges(false); 
       setTimeout(() => {
         router.push("/manage-questions");
       }, 500);
@@ -536,8 +555,8 @@ function EditQuestionContent() {
               className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 text-gray-800  transition-all duration-200 cursor-pointer"
             >
               <option value="">Select a quiz set</option>
-              {QUIZ_SETS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              {quizSets.map((s) => (
+                <option key={s.quizId} value={String(s.quizId)}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -562,7 +581,7 @@ function EditQuestionContent() {
                   ...prev,
                   questionImage: { action: 'upload', file, oldUrl: question.image || undefined }
                 }));
-                // Create preview URL for immediate display
+                
                 const previewUrl = URL.createObjectURL(file);
                 setQuestion(q => q ? { ...q, image: previewUrl } : q);
               }
@@ -570,13 +589,13 @@ function EditQuestionContent() {
             onImageRemove={() => {
               const oldUrl = originalQuestion?.image;
               if (oldUrl) {
-                // Mark for deletion on save
+                
                 setPendingImageChanges(prev => ({
                   ...prev,
                   questionImage: { action: 'delete', oldUrl }
                 }));
               } else {
-                // Just clear pending upload
+                
                 setPendingImageChanges(prev => {
                   const { questionImage, ...rest } = prev;
                   return rest;
@@ -631,7 +650,7 @@ function EditQuestionContent() {
                           [answer.id]: { action: 'upload', file, oldUrl: answer.image || undefined }
                         }
                       }));
-                      // Create preview URL for immediate display
+                      
                       const previewUrl = URL.createObjectURL(file);
                       setQuestion(q => q ? { 
                         ...q, 
@@ -642,7 +661,7 @@ function EditQuestionContent() {
                   onImageRemove={() => {
                     const oldUrl = originalQuestion?.answers[index]?.image;
                     if (oldUrl) {
-                      // Mark for deletion on save
+                      
                       setPendingImageChanges(prev => ({
                         ...prev,
                         answers: {
@@ -651,7 +670,7 @@ function EditQuestionContent() {
                         }
                       }));
                     } else {
-                      // Just clear pending upload
+                      
                       setPendingImageChanges(prev => {
                         const { [answer.id]: removed, ...restAnswers } = prev.answers;
                         return { ...prev, answers: restAnswers };

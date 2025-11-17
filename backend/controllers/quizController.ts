@@ -5,8 +5,8 @@ import User from '../models/User.js';
 export const getQuizWithQuestions = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);
-    if (![1, 2, 3, 4, 5, 6, 7, 8].includes(quizId)) {
-      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1-8.' });
+    if (!Number.isInteger(quizId) || quizId < 1) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be an integer >= 1.' });
     }
 
     const quiz = await Quiz.findOne({ quizId }).populate('questions');
@@ -103,7 +103,7 @@ export const unpublishAllQuizzes = async (req: Request, res: Response) => {
 
 export const checkQuizzesPublishedStatus = async (req: Request, res: Response) => {
   try {
-    const quiz = await Quiz.findOne({ quizId: 1 }); // assuming quizId 1 is ZES
+    const quiz = await Quiz.findOne({ quizId: 1 }); 
     if (!quiz) {
       return res.status(404).json({ success: false, message: 'Quiz not found.' });
     }
@@ -114,5 +114,73 @@ export const checkQuizzesPublishedStatus = async (req: Request, res: Response) =
       message: 'Error checking quiz published status',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+};
+
+export const createQuizSet = async (req: Request, res: Response) => {
+  try {
+    let { quizId, name, questions = [], isPublished = false } = req.body;
+
+    
+    if (quizId !== undefined && quizId !== null) {
+      quizId = Number(quizId);
+      if (!Number.isInteger(quizId) || quizId < 1) {
+        return res.status(400).json({ success: false, message: 'Invalid quizId. Must be an integer >= 1.' });
+      }
+      const exists = await Quiz.findOne({ quizId });
+      if (exists) {
+        return res.status(409).json({ success: false, message: `Quiz with quizId ${quizId} already exists.` });
+      }
+    } else {
+      const last = await Quiz.findOne().sort({ quizId: -1 }).select('quizId').lean();
+      quizId = last?.quizId ? Number(last.quizId) + 1 : 1;
+    }
+
+    const newQuiz = new Quiz({ quizId, name, questions, isPublished });
+    await newQuiz.save();
+
+    return res.status(201).json({ success: true, message: 'Quiz set created successfully.', quiz: newQuiz });
+  } catch (error) {
+    console.error('Error creating quiz set:', error);
+    return res.status(500).json({ success: false, message: 'Error creating quiz set', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+export const getQuizSets = async (req: Request, res: Response) => {
+  try {
+    const quizzes = await Quiz.find().select('quizId name').sort({ quizId: 1 }).lean();
+    
+    const sets = (quizzes || []).map((q: any) => ({ quizId: Number(q.quizId), name: q.name ?? `Quiz ${q.quizId}` }));
+    return res.status(200).json({ success: true, data: sets });
+  } catch (error) {
+    console.error('Error listing quiz sets:', error);
+    return res.status(500).json({ success: false, message: 'Error listing quiz sets', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+export const updateQuizSet = async (req: Request, res: Response) => {
+  try {
+    const quizId = Number(req.params.quizId);
+    if (!Number.isInteger(quizId) || quizId < 1) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be an integer >= 1.' });
+    }
+
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Invalid name. Name must be a non-empty string.' });
+    }
+
+    const quiz = await Quiz.findOne({ quizId });
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: `Quiz with quizId ${quizId} not found.` });
+    }
+
+    quiz.name = name.trim();
+    await quiz.save();
+
+    return res.status(200).json({ success: true, message: 'Quiz set updated successfully.', quiz });
+  } catch (error) {
+    console.error('Error updating quiz set:', error);
+    return res.status(500).json({ success: false, message: 'Error updating quiz set', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };

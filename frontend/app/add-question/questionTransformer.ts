@@ -1,7 +1,6 @@
 import { Question } from "./page";
-import { getQuizIdFromSetName } from '@/constants/quizSets';
 
-// Type definitions for input and output
+
 export type InputAnswer = {
 	id: string;
 	text: string;
@@ -26,7 +25,7 @@ export type OutputQuestion = {
 	correctOption: string;
 };
 
-// Function to transform input question to output format
+
 export function transformQuestion(input: Question): OutputQuestion {
 	const idToOption = ['A', 'B', 'C', 'D'];
 	const options: OutputOption[] = input.answers.map((ans, idx) => ({
@@ -39,8 +38,8 @@ export function transformQuestion(input: Question): OutputQuestion {
 	const correctIdx = input.answers.findIndex(ans => ans.id === input.correctAnswer);
 	const correctOption = idToOption[correctIdx];
 
-	// quizSet is a department name; convert to numeric quizId expected by API
-	const quizId = typeof input.quizSet === 'string' ? getQuizIdFromSetName(input.quizSet) : Number(input.quizSet) || 0;
+	
+	const quizId = typeof input.quizSet === 'number' ? input.quizSet : Number(input.quizSet) || 0;
 
 	return {
 		quizId,

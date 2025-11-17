@@ -8,9 +8,8 @@ import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { transformQuestion } from './questionTransformer';
-import { QUIZ_SETS } from '@/constants/quizSets';
 
-// Error modal state for alerts
+
 type ErrorModalState = { open: boolean; message: string };
 
 interface Answer {
@@ -38,12 +37,37 @@ export default function AddQuestion(): React.ReactElement | null {
   const router = useRouter();
   const { data: session, status } = useSession();
   
-  // Redirect if not authenticated
+  
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/admin/login');
     }
   }, [status, router]);
+
+  
+  useEffect(() => {
+    if (status === 'authenticated') {
+      (async () => {
+        try {
+          const api = await createAdminApi();
+          const resp = await api.get('/quizzes/get-quiz-sets');
+          if (resp && resp.data) {
+            
+            const body: any = resp.data as any;
+            const sets = Array.isArray(body) ? body as { quizId: number; name: string }[] : (body?.data ?? []) as { quizId: number; name: string }[];
+            setQuizSets(sets);
+            
+            if (Array.isArray(sets) && sets.length > 0) {
+              const selected = sets.find(s => s.quizId === question.quizSet) ?? sets[0];
+              setQuestion(prev => ({ ...prev, quizSet: selected.quizId }));
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch quiz sets', err);
+        }
+      })();
+    }
+  }, [status]);
 
   const [question, setQuestion] = useState<Question>({
     question: '',
@@ -58,28 +82,49 @@ export default function AddQuestion(): React.ReactElement | null {
     quizSet: null,
   });
 
-  // Track pending image files (to upload on save)
+  
   const [pendingImageFiles, setPendingImageFiles] = useState<{
     questionImage?: File;
-    answers: Record<string, File>; // answerId -> File
+    answers: Record<string, File>; 
   }>({
     answers: {}
   });
 
-  // Track Cloudinary publicIds for uploaded images
+  
   const [uploadedImageIds, setUploadedImageIds] = useState<{
     questionImage?: string;
-    answers: Record<string, string>; // answerId -> publicId
+    answers: Record<string, string>; 
   }>({
     answers: {}
   });
 
-  // Key to force ImageUpload components to remount when form is cleared
+  
   const [formResetKey, setFormResetKey] = useState(0);
+
+  
+  const [quizSets, setQuizSets] = useState<{ quizId: number; name: string }[]>([]);
+  
 
   const handleQuizSetChange = (value: string): void => {
     const parsed = value ? parseInt(value) : null;
     setQuestion(prev => ({ ...prev, quizSet: parsed }));
+  };
+
+  
+
+  
+  const refreshQuizSets = async (): Promise<void> => {
+    try {
+      const api = await createAdminApi();
+      const resp = await api.get('/quizzes/get-quiz-sets');
+      if (resp && resp.data) {
+        const body: any = resp.data as any;
+        const sets = Array.isArray(body) ? body as { quizId: number; name: string }[] : (body?.data ?? []) as { quizId: number; name: string }[];
+        setQuizSets(sets);
+      }
+    } catch (err) {
+      console.error('Failed to refresh quiz sets', err);
+    }
   };
 
   const handleQuestionChange = (value: string): void => {
@@ -109,7 +154,7 @@ export default function AddQuestion(): React.ReactElement | null {
       return;
     }
 
-    // Validate that ALL 4 answers have either text or image
+    
     const emptyAnswers = question.answers.filter(answer => 
       !answer.text.trim() && !answer.image.trim()
     );
@@ -128,7 +173,7 @@ export default function AddQuestion(): React.ReactElement | null {
       return;
     }
 
-    // Validate that the selected correct answer is not empty
+    
     const correct = question.answers.find(a => a.id === question.correctAnswer);
     if (!correct || (!correct.text.trim() && !correct.image.trim())) {
       setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
@@ -144,24 +189,24 @@ export default function AddQuestion(): React.ReactElement | null {
       setIsSaving(true);
       const api = await createAdminApi();
       const updatedQuestion = { ...question };
-      const uploadedPublicIds: string[] = []; // Track for rollback
+      const uploadedPublicIds: string[] = []; 
       
-      // Upload question image if selected
+      
       if (pendingImageFiles.questionImage) {
         const { url, publicId } = await uploadImageToCloudinary(pendingImageFiles.questionImage, 'department-quiz/quiz-questions');
         updatedQuestion.image = url;
         updatedQuestion.imagePublicId = publicId;
-        uploadedPublicIds.push(publicId); // Track for potential rollback
+        uploadedPublicIds.push(publicId); 
       }
       
-      // Upload answer images if selected
+      
       for (const [answerId, file] of Object.entries(pendingImageFiles.answers)) {
         const answerIndex = updatedQuestion.answers.findIndex(a => a.id === answerId);
         if (answerIndex !== -1) {
           const { url, publicId } = await uploadImageToCloudinary(file, 'department-quiz/quiz-answers');
           updatedQuestion.answers[answerIndex].image = url;
           updatedQuestion.answers[answerIndex].imagePublicId = publicId;
-          uploadedPublicIds.push(publicId); // Track for potential rollback
+          uploadedPublicIds.push(publicId); 
         }
       }
       
@@ -173,7 +218,7 @@ export default function AddQuestion(): React.ReactElement | null {
         const response = await api.post('/questions', payload);
 
       } catch (dbError) {
-        // Database save failed - rollback uploaded images
+        
         console.error('Database save failed, rolling back uploaded images:', dbError);
         for (const publicId of uploadedPublicIds) {
           try {
@@ -183,10 +228,10 @@ export default function AddQuestion(): React.ReactElement | null {
             console.error('Failed to rollback image:', publicId, deleteError);
           }
         }
-        throw dbError; // Re-throw to be caught by outer catch
+        throw dbError; 
       }
       
-      // Reset form - images are now uploaded
+      
       setQuestion({
         question: '',
         image: '',
@@ -199,21 +244,22 @@ export default function AddQuestion(): React.ReactElement | null {
         correctAnswer: '',
         quizSet: null,
       });
+      
 
-      // Clear pending image files
+      
       setPendingImageFiles({
         answers: {}
       });
 
-      // Clear uploaded image IDs tracking
+      
       setUploadedImageIds({
         answers: {}
       });
 
-      // Force ImageUpload components to remount and reset their internal state
+      
       setFormResetKey(prev => prev + 1);
       
-      // Scroll to top of the page
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
       setShowSaveConfirm(true);
@@ -227,10 +273,10 @@ export default function AddQuestion(): React.ReactElement | null {
 
   const clearForm = async (): Promise<void> => {
     setIsClearing(true);
-    // No need to delete from Cloudinary since images haven't been uploaded yet
-    // Just clear local state
+    
+    
 
-    // Clear the form state
+    
     setQuestion({
       question: '',
       image: '',
@@ -244,18 +290,19 @@ export default function AddQuestion(): React.ReactElement | null {
       quizSet: null,
     });
 
-    // Clear pending image files
+    
     setPendingImageFiles({
       answers: {}
     });
 
-    // Clear uploaded image IDs
+    
     setUploadedImageIds({
       answers: {}
     });
 
-    // Force ImageUpload components to remount and reset their internal state
+    
     setFormResetKey(prev => prev + 1);
+    
 
     setShowClearConfirm(false);
     setIsClearing(false);
@@ -265,7 +312,7 @@ export default function AddQuestion(): React.ReactElement | null {
     await signOut({ callbackUrl: '/admin/login' });
   };
 
-  // Show loading while checking authentication
+  
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100">
@@ -274,7 +321,7 @@ export default function AddQuestion(): React.ReactElement | null {
     );
   }
 
-  // Don't render if not authenticated (redirect will happen)
+  
   if (status === 'unauthenticated') {
     return null;
   }
@@ -471,16 +518,23 @@ export default function AddQuestion(): React.ReactElement | null {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Quiz Set *
             </label>
-            <select
-              value={question.quizSet ?? ""}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleQuizSetChange(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-            >
-              <option value="">Select a quiz set</option>
-              {QUIZ_SETS.map((s, idx) => (
-                <option key={s} value={String(idx + 1)}>{s}</option>
-              ))}
-            </select>
+            <div className="flex items-center space-x-2">
+              <div className="flex-1">
+                <label htmlFor="existing-sets" className="sr-only">Choose existing set</label>
+                <select
+                  id="existing-sets"
+                  onFocus={() => { void refreshQuizSets(); }}
+                  value={question.quizSet ? String(question.quizSet) : ''}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleQuizSetChange(e.target.value)}
+                  className="w-full p-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-800"
+                >
+                  <option value="">Select set</option>
+                  {quizSets.map(s => (
+                    <option key={s.quizId} value={String(s.quizId)}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
           {/* Question Text */}
           <div className="mb-6">
@@ -504,7 +558,7 @@ export default function AddQuestion(): React.ReactElement | null {
             onImageSelect={(file) => {
               if (file) {
                 setPendingImageFiles(prev => ({ ...prev, questionImage: file }));
-                // Create preview URL for immediate display
+                
                 const previewUrl = URL.createObjectURL(file);
                 setQuestion(prev => ({ ...prev, image: previewUrl }));
               }
@@ -568,7 +622,7 @@ export default function AddQuestion(): React.ReactElement | null {
                         ...prev,
                         answers: { ...prev.answers, [answer.id]: file }
                       }));
-                      // Create preview URL for immediate display
+                      
                       const previewUrl = URL.createObjectURL(file);
                       handleAnswerChange(answer.id, 'image', previewUrl);
                     }

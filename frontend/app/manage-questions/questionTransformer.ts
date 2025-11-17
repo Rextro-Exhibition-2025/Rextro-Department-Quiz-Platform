@@ -8,10 +8,9 @@ import type {
 } from '../../types/quiz';
 
 
-import { getQuizSetName } from '@/constants/quizSets';
-
 export function transformQuizApiQuestion(apiQuestion: QuestionApiResponse): QuestionItem {
-  const quizSet = getQuizSetName(Number(apiQuestion.quizId));
+ 
+  const quizSet = String(apiQuestion.quizId);
 
   const answers: QuestionOption[] = (apiQuestion.options || []).map((opt: QuizApiOption) => ({
     id: String(opt.option).toLowerCase(),

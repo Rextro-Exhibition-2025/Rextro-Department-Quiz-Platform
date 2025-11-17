@@ -1,7 +1,6 @@
-// Simple transformer for edit-question page
+
 
 import { Answer, Question, QuestionApiResponse, QuizApiQuestion, QuizApiOption } from "@/types/quiz";
-import { getQuizSetName, getQuizIdFromSetName } from '@/constants/quizSets';
 
 
 
@@ -22,15 +21,16 @@ export function transformApiQuestion(apiQ: QuestionApiResponse): Question {
     image: apiQ.questionImage ,
     answers,
     correctAnswer,
-    quizSet: getQuizSetName(Number(apiQ.quizId)),
+    
+    quizSet: String(apiQ.quizId),
   };
 }
 
 
 
 export function transformQuestionToApi(q: Question): QuizApiQuestion {
-  // Convert quizSet (department name) back to numeric quizId expected by the API
-  const quizId = getQuizIdFromSetName(q.quizSet || '');
+  
+  const quizId = Number(q.quizSet || 0) || 0;
 
   const options: QuizApiOption[] = (q.answers || []).map((a) => ({
     option: String(a.id).toUpperCase(),

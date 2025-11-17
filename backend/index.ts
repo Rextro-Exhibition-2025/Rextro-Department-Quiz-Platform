@@ -7,7 +7,6 @@ import YAML from 'yamljs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from "./config/db.js";
-import { ensureQuizzesExist } from './utils/seedQuizzes.js';
 import UserRouter from "./routes/userRoutes.js";
 import QuestionRouter from "./routes/questionRoute.js";
 import QuizRouter from "./routes/quizRoute.js";
@@ -20,28 +19,28 @@ dotenv.config();
 
 const app: Application = express();
 
-// Get __dirname equivalent for ES modules
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load OpenAPI specification
+
 const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
 
 //CORS
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app'], // Allow both frontend ports
+  origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app'], 
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
-// Middleware - Increase limit for image uploads (base64 images can be large)
-app.use(express.json({ limit: '10mb' })); // Allow up to 10MB for base64 images
+
+app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Connect to MongoDB
 
-// Swagger UI setup
+
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -57,13 +56,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   }
 }));
 
-// API documentation JSON endpoint
+
 app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.json(swaggerDocument);
 });
 
-// Routes
+
 app.get("/", (req, res) => {
   res.send(`
     <h1>🚀 Rextro Quiz Platform API</h1>
@@ -73,7 +72,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// API Routes
+
 app.use("/api/users", UserRouter);
 app.use("/api/questions", QuestionRouter);
 app.use("/api/quizzes", QuizRouter);
@@ -84,12 +83,7 @@ app.use("/api/leaderboard", LeaderboardRouter);
 
 const start = async () => {
   await connectDB();
-  // Ensure required quiz documents exist (idempotent)
-  try {
-    await ensureQuizzesExist();
-  } catch (err) {
-    console.error('Error ensuring quizzes at startup:', err);
-  }
+  
 
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
@@ -101,9 +95,9 @@ const start = async () => {
 
 start();
 
-// handling unhandled promise rejections
+
 process.on("unhandledRejection", (err: Error) => {
   console.error(`❌ Error: ${err.message}`);
-  // Close server & exit process
+  
   process.exit(1);
 });

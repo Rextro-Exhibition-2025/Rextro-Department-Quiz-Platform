@@ -10,7 +10,6 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
   try {
     console.log('📝 Received question data:', JSON.stringify(req.body, null, 2));
 
-    // Validate that each option has either text or image
     if (req.body.options && Array.isArray(req.body.options)) {
       for (let i = 0; i < req.body.options.length; i++) {
         const option = req.body.options[i];
@@ -27,14 +26,10 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
     let quiz = await Quiz.findOne({ quizId: req.body.quizId });
 
     if (!quiz) {
-      // Safety: if the quiz doc is missing, create it so questions can be added.
-      // This prevents 404s when frontend and DB get out of sync.
       console.warn(`Quiz with quizId ${req.body.quizId} not found. Creating new quiz document.`);
       quiz = await Quiz.create({ quizId: req.body.quizId, questions: [] });
       console.log(`Created quiz document for quizId ${req.body.quizId}`);
     }
-
-    // Check if quiz already has 40 or more questions
     const currentQuestionCount = quiz.questions?.length || 0;
     if (currentQuestionCount >= 40) {
       res.status(400).json({
@@ -44,13 +39,10 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
       });
       return;
     }
-
-    // Create the question
     console.log('✅ Creating question in database...');
     const question = await Question.create(req.body);
     console.log('✅ Question created with ID:', question._id);
 
-    // Add the question to the quiz
     if (!quiz.questions) {
       quiz.questions = [];
     }
@@ -76,8 +68,6 @@ export const editQuestion =  async (req: Request, res: Response): Promise<any> =
   try{
     const questionId = req.params.questionId;
     const updatedData = req.body;
-
-    // Validate that each option has either text or image
     if (updatedData.options && Array.isArray(updatedData.options)) {
       for (let i = 0; i < updatedData.options.length; i++) {
         const option = updatedData.options[i];
@@ -114,9 +104,6 @@ export const deleteQuestion = async (req: Request, res: Response): Promise<any> 
     if (!question) {
       return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
     }
-
-  
-    // Also remove the question from any quizzes that reference it
     await Quiz.updateMany(
       { questions: question._id },
       { $pull: { questions: question._id } }
