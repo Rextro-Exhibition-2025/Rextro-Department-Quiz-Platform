@@ -1,18 +1,14 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { User, LogIn } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
-import axios from 'axios';
-import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
+import { signIn } from 'next-auth/react';
 
 interface LoginFormResponse {
   success: boolean;
   data: {
-    teamId: string;
-    memberName: string;
-    schoolName: string;
-    teamName: string;
+    name: string;
     authToken: string;
     number: number;
   };
@@ -21,44 +17,17 @@ interface LoginFormResponse {
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
+    name: '',
     studentId: '',
-    memberName: '',
-    password: '',
-    schoolName: '',
-    medium: ''
+    email: ''
   });
+  const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   // Removed session state
   const router = useRouter();
   const { user, setUser } = useUser();
-  const [schools, setSchools] = useState<string[]>([]);
-
-
-  // Add this useEffect to your login page to debug
-
-
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-
-        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
-
-        console.log('Fetched schools:', response.data);
-
-        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
-
-
-      } catch (error) {
-
-        console.error('Error fetching schools:', error);
-
-      }
-    }
-
-    fetchSchools();
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -74,102 +43,57 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
-      setError('Please fill in all fields');
+    if (!isRegistering) {
+      setLoading(false);
+      signIn('google', { callbackUrl: '/quiz' });
+      return;
+    }
+
+    if (!formData.name || !formData.studentId || !formData.email) {
+      setError('Please provide name, email and student ID');
       setLoading(false);
       return;
     }
 
-
-    // Simulate authentication (replace with actual authentication logic)
     try {
-      // You can add your authentication logic here
-      // For now, we'll simulate a successful login after 1 second
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const url = `${apiUrl.replace(/\/$/, '')}/auth/register`;
+      console.log('Register POST ->', url, { name: formData.name, studentId: formData.studentId, email: formData.email });
 
-      const studentId = formData.memberName;
-
-      if (studentId.length !== 9) {
-        setError('Student ID must be exactly 9 characters. Check for ending/starting spaces.');
-        setLoading(false);
-        return;
-      }
-
-
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          schoolName: formData.schoolName, // Backend expects 'teamName'
-          studentId: formData.memberName,
-          password: formData.password,
-          medium: formData.medium
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name, studentId: formData.studentId, email: formData.email })
       });
 
-      const responseData: LoginFormResponse = await response.json();
-
-      localStorage.setItem('studentData', JSON.stringify({
-        memberName: formData.memberName,
-        schoolName: formData.schoolName,
-        medium: formData.medium,
-        
-        loginTime: new Date().toISOString()
-      }));
-
-      // Request fullscreen and redirect to quiz
-      // if (document.documentElement.requestFullscreen) {
-      //   await document.documentElement.requestFullscreen();
-      // }
-      if (response.ok && responseData.success) {
-        localStorage.setItem('authToken', responseData.data.authToken);
-
+      let responseData: LoginFormResponse | null = null;
+      try {
+        responseData = await res.json();
+      } catch (parseErr) {
+        console.error('Failed to parse JSON response', parseErr);
+      }
+      if (res.ok && responseData?.success) {
+        const data = responseData.data;
+        // Persist auth token only.
+        localStorage.setItem('authToken', data.authToken);
+        // Normalize and set user context — use `name` per updated User model.
         setUser({
-          teamId: responseData.data.teamId,
-          memberName: responseData.data.memberName,
-          schoolName: responseData.data.schoolName,
-          teamName: responseData.data.teamName,
-          authToken: responseData.data.authToken,
-          number: responseData.data.number,
-          medium: formData.medium
-        });
-        console.log(user);
-
+          name: formData.name,
+          authToken: data.authToken,
+          number: data.number ?? 1
+        } as any);
         router.push('/quiz');
       } else {
-        setError('Login failed. Please check your credentials.');
+        setError(responseData?.message || res.statusText || 'Registration failed');
       }
-    } catch (error) {
-      setError('Login failed. Please check your credentials.');
+    } catch (err: any) {
+      console.error('Network or fetch error:', err);
+      // If the browser/extension blocked the request, err.message may be generic — show it.
+      setError(err?.message || 'Request failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-
-        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
-
-        console.log('Fetched schools:', response.data);
-
-        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
-
-
-      } catch (error) {
-
-        console.error('Error fetching schools:', error);
-
-      }
-    }
-
-    fetchSchools();
-  }, []);
 
 
   return (
@@ -220,125 +144,94 @@ export default function LoginPage() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Student ID */}
-            <div>
-              <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
-                Student ID
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="memberName"
-                  name="memberName"
-                  value={formData.memberName}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                  placeholder="Enter your student ID"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* School Selection */}
-            <div>
-              <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
-                School Name
-              </label>
-              <select
-                id="schoolName"
-                name="schoolName"
-                value={formData.schoolName}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
-                required
+            {/* Mode toggle */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-sm text-gray-600">{isRegistering ? 'Register a new student' : 'Student Login'}</div>
+              <button
+                type="button"
+                onClick={() => setIsRegistering(prev => !prev)}
+                className="text-sm text-[#651321] hover:text-[#df7500] font-medium"
               >
-                {schools.map((school, index) => (
-                  <option
-                    key={index}
-                    value={index === 0 ? '' : school}
-                    disabled={index === 0}
-                    className={index === 0 ? "text-gray-500" : "text-[#651321]"}
-                  >
-                    {school}
-                  </option>
-                ))}
-              </select>
+                {isRegistering ? 'Switch to Login' : 'Switch to Register'}
+              </button>
             </div>
 
-            {/* Medium Selection */}
-            <div>
-              <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
-                Medium
-              </label>
-              <select
-                id="medium"
-                name="medium"
-                value={formData.medium}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
-                required
-              >
-                <option value="" disabled className="text-gray-500">Select medium</option>
-                <option value="S">සිංහල</option>
-                <option value="E">English</option>
-              </select>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+            {isRegistering ? (
+              <>
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    placeholder="Enter full name"
+                    required
+                  />
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                  placeholder="Enter your password"
-                  required
-                />
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                  <input
+                    id="studentId"
+                    name="studentId"
+                    value={formData.studentId}
+                    onChange={handleInputChange}
+                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    placeholder="Enter student ID"
+                    required
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-3">Use Google to sign in</p>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => signIn('google', { callbackUrl: '/quiz' })}
+                  className="w-full border border-gray-300 py-2 rounded-lg flex items-center justify-center gap-2 bg-white text-[#651321] hover:bg-gray-50"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  )}
+                  <img src="/google-logo.svg" alt="Google" className="h-5 w-5" />
+                  Continue with Google
                 </button>
               </div>
-            </div>
+            )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform  hover:shadow-lg  hover:scale-[1.02] cursor-pointer '
-                }`}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Logging in...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  Login to start quiz
-                </>
-              )}
-            </button>
+            {/* Submit Button (only for registration) */}
+            {isRegistering && (
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:shadow-lg hover:scale-[1.02]"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    Register and start quiz
+                  </>
+                )}
+              </button>
+            )}
           </form>
 
           {/* Back to Home */}

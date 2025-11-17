@@ -14,7 +14,7 @@ export const authOptions: AuthOptions = {
       console.log('Auth callback invoked');
 
       // Get allowed admin emails from environment variables
-      const adminEmailsEnv = process.env.ADMIN_EMAILS || 'admin@school.edu,teacher@school.edu';
+      const adminEmailsEnv = process.env.ADMIN_EMAILS || '';
       const adminEmails = adminEmailsEnv.split(',').map(email => email.trim());
       
       // Check if user email is in admin list

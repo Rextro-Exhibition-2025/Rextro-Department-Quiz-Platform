@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Rextro School Quiz Platform Backend",
+  "description": "Rextro Quiz Platform Backend",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

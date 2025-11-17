@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Rextro School Quiz Platform API
-  description: Backend API for the school quiz platform with authentication, quiz management, and violation tracking
+  title: Rextro Quiz Platform API
+  description: Backend API for the quiz platform with authentication, quiz management, and violation tracking
   version: 1.0.0
   contact:
     email: rmkavindudhananjaya@gmail.com
@@ -15,8 +15,6 @@ servers:
 tags:
   - name: Authentication
     description: User authentication and authorization
-  - name: School Teams
-    description: School team management
   - name: Users
     description: User management
   - name: Questions
@@ -36,94 +34,29 @@ components:
     LoginRequest:
       type: object
       required:
-        - memberName
+        - name
         - password
-        - schoolName
       properties:
-        memberName:
+        name:
           type: string
           example: "John Doe"
         password:
           type: string
-          example: "password123"
-        schoolName:
-          type: string
-          example: "Sunrise High School"
-
-    LoginResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            teamId:
-              type: string
-              example: "64f1a2b3c4d5e6f7g8h9i0j1"
-            memberName:
-              type: string
-              example: "John Doe"
-            schoolName:
-              type: string
-              example: "Sunrise High School"
-            teamName:
-              type: string
-              example: "Team Alpha"
-            authToken:
-              type: string
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        message:
-          type: string
-          example: "Login successful"
+          example: "secret_password"
 
     UpdateStateRequest:
       type: object
       required:
-        - schoolName
-        - memberName
+        - name
         - hasEndedQuiz
       properties:
-        schoolName:
-          type: string
-          example: "Sunrise High School"
-        memberName:
+        name:
           type: string
           example: "John Doe"
         hasEndedQuiz:
           type: boolean
           example: true
 
-    SchoolTeam:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        schoolName:
-          type: string
-          example: "Sunrise High School"
-        teamName:
-          type: string
-          example: "Team Alpha"
-        members:
-          type: array
-          items:
-            type: object
-            properties:
-              memberName:
-                type: string
-                example: "John Doe"
-              password:
-                type: string
-                example: "hashed_password"
-              hasStartedQuiz:
-                type: boolean
-                example: false
-              hasEndedQuiz:
-                type: boolean
-                example: false
 
     Question:
       type: object
@@ -188,10 +121,10 @@ components:
         _id:
           type: string
           example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        teamId:
+        userId:
           type: string
           example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        memberName:
+        name:
           type: string
           example: "John Doe"
         violationType:
@@ -275,7 +208,14 @@ paths:
                     type: string
                     example: "Quiz state updated successfully"
                   data:
-                    $ref: '#/components/schemas/SchoolTeam'
+                    type: object
+                    properties:
+                        name:
+                          type: string
+                          example: "John Doe"
+                        hasEndedQuiz:
+                          type: boolean
+                          example: true
         '401':
           description: Unauthorized
           content:
@@ -289,66 +229,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /school-teams:
-    get:
-      tags:
-        - School Teams
-      summary: Get all school teams
-      description: Retrieve a list of all school teams
-      responses:
-        '200':
-          description: Successfully retrieved school teams
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SchoolTeam'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    post:
-      tags:
-        - School Teams
-      summary: Create a new school team
-      description: Create a new school team with members
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SchoolTeam'
-      responses:
-        '201':
-          description: School team created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/SchoolTeam'
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /quizzes/{id}:
     get:
@@ -470,11 +350,11 @@ paths:
             schema:
               type: object
               required:
-                - teamId
+                - userId
                 - memberName
                 - violationType
               properties:
-                teamId:
+                userId:
                   type: string
                   example: "64f1a2b3c4d5e6f7g8h9i0j1"
                 memberName:
@@ -512,11 +392,11 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: teamId
+        - name: userId
           in: query
           schema:
             type: string
-          description: Filter by team ID
+          description: Filter by user ID
         - name: violationType
           in: query
           schema:
@@ -553,12 +433,12 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: teamId
+        - name: userId
           in: query
           required: true
           schema:
             type: string
-          description: Team ID
+          description: User ID
         - name: memberName
           in: query
           required: true

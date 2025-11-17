@@ -12,7 +12,6 @@ import UserRouter from "./routes/userRoutes.js";
 import QuestionRouter from "./routes/questionRoute.js";
 import QuizRouter from "./routes/quizRoute.js";
 import AuthRouter from "./routes/authRoutes.js";
-import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 import UploadRouter from "./routes/uploadRoutes.js";
 
 dotenv.config();
@@ -77,7 +76,6 @@ app.use("/api/users", UserRouter);
 app.use("/api/questions", QuestionRouter);
 app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
-app.use("/api/school-teams", SchoolTeamRouter);
 app.use("/api/upload", UploadRouter);
 
 const start = async () => {

@@ -14,6 +14,7 @@ import { Clock } from 'lucide-react';
 
 
 import { User } from 'next-auth';
+import { getSession } from 'next-auth/react';
 
 // Utils and types
 
@@ -32,20 +33,13 @@ export interface QuizQuestion {
   answers: Answer[];
 }
 
-interface StudentData {
-  memberName: string;
-  schoolName: string;
-  sessionId?: string;
-  sessionTime?: string;
-}
 
 interface SelectedAnswers {
   [questionIndex: number]: string;
 }
 
 interface CompletionData {
-  memberName: string;
-  schoolName: string;
+  name: string;
   answers: SelectedAnswers;
   score: number;
   completedAt: string;
@@ -227,7 +221,7 @@ export default function Quiz(): React.JSX.Element | null {
   };
 
   // Update user quiz state in backend
-  const updateQuizState = async (studentData: StudentData): Promise<void> => {
+  const updateQuizState = async (): Promise<void> => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
     const response = await fetch(url, {
       method: 'PUT',
@@ -236,8 +230,7 @@ export default function Quiz(): React.JSX.Element | null {
         'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
       },
       body: JSON.stringify({
-        schoolName: studentData.schoolName,
-        memberName: studentData.memberName,
+        name: user.user?.name ?? '',
         hasEndedQuiz: true
       })
     });
@@ -262,11 +255,13 @@ export default function Quiz(): React.JSX.Element | null {
       });
     }
 
-    const updatedStudentData = {
-      ...studentData,
-      hasEndedQuiz: true
-    };
-    localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
+    // No local studentData is saved anymore; keep user context updated instead.
+    if (user.user) {
+      user.setUser({
+        ...user.user,
+        hasEndedQuiz: true
+      });
+    }
   };
 
   // Handle quiz submission
@@ -275,22 +270,20 @@ export default function Quiz(): React.JSX.Element | null {
     setIsSubmitting(true);
 
     try {
-      // Check authentication
-      const studentData = localStorage.getItem('studentData');
-      if (!studentData) {
+      // Check authentication via user context and auth token
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken || !user.user) {
         alert('Session expired. Please login again.');
         router.push('/login');
         return;
       }
 
-      const parsedStudentData: StudentData = JSON.parse(studentData);
       const score = calculateScore();
       const answeredCount = Object.keys(selectedAnswers).length;
 
-      // Prepare submission data
+      // Prepare submission data using user context
       const submissionData: CompletionData = {
-        memberName: parsedStudentData.memberName,
-        schoolName: parsedStudentData.schoolName,
+        name: user.user?.name || '',
         answers: selectedAnswers,
         score: score,
         completedAt: new Date().toISOString(),
@@ -299,7 +292,7 @@ export default function Quiz(): React.JSX.Element | null {
       };
 
       // Update user state in backend
-      await updateQuizState(parsedStudentData);
+      await updateQuizState();
 
       // Store results locally
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
@@ -322,8 +315,7 @@ export default function Quiz(): React.JSX.Element | null {
       setCompletionData(submissionData);
       setShowCompletionCard(true);
 
-      // Clear authentication
-      localStorage.removeItem('studentData');
+      // Clear any transient authentication flags if needed (we keep authToken in storage)
 
       // Submit to quiz context
       await submitQuiz();
@@ -342,10 +334,7 @@ export default function Quiz(): React.JSX.Element | null {
       userData.number = user?.user?.number ?? 0;
       userData.authToken = user?.user?.authToken || '';
       userData.loginTime = new Date().toISOString();
-      userData.schoolName = user?.user?.schoolName || '';
-      userData.memberName = user?.user?.memberName || '';
-      userData.teamId = user?.user?.teamId || '';
-      userData.teamName = user?.user?.teamName || '';
+      userData.name = user?.user?.name || '';
       localStorage.setItem('userData', JSON.stringify(userData));
     }
   }, [user]);
@@ -353,17 +342,53 @@ export default function Quiz(): React.JSX.Element | null {
   useEffect(() => {
     console.log("calling ");
 
+    // After OAuth redirect from NextAuth, call our helper route which will
+    // request the backend to link the Google account and set the httpOnly
+    // `authToken` cookie. This runs on the client so the browser receives
+    // the Set-Cookie header forwarded by `/api/auth/link`.
+    (async () => {
+      try {
+        const session = await getSession();
+        if (session?.user?.email) {
+          await fetch('/api/auth/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session.user.email, name: session.user.name }),
+            credentials: 'include'
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to call /api/auth/link', e);
+      }
+    })();
+
     const fetchQuiz = async (id: number) => {
       console.log("calling 2", id);
 
       try {
-
-
         const api = await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/${id}`);
         setQuizData(transformQuizApiResponse(response.data.quiz));
-      } catch (error) {
-        console.error('Fetch quiz error:', error);
+        return;
+      } catch (error: any) {
+        // Detailed logging to help debug 404 vs network issues
+        console.error('Fetch quiz error:', error?.toString?.() || error);
+        if (error?.response) {
+          console.error('Response status:', error.response.status, 'data:', error.response.data);
+          // If quiz not found (404) and id !== 1, retry with quiz 1 as a safe fallback
+          if (error.response.status === 404 && id !== 1) {
+            console.warn(`Quiz ${id} not found; retrying with quiz 1 as fallback`);
+            try {
+              const api = await createStudentApi({ token: user.user?.authToken || '' });
+              const resp2: any = await api.get(`/quizzes/1`);
+              setQuizData(transformQuizApiResponse(resp2.data.quiz));
+              setQuizId(1);
+              return;
+            } catch (err2) {
+              console.error('Fallback fetch quiz error:', err2);
+            }
+          }
+        }
       }
     };
     const quizid = getQuizId(user.user);
@@ -434,22 +459,14 @@ export default function Quiz(): React.JSX.Element | null {
   useEffect(() => {
     const checkAuthentication = () => {
       const authToken = localStorage.getItem('authToken');
-      const studentData = localStorage.getItem('studentData');
-
-      if (!authToken || !studentData) {
+      // Rely on user context instead of local studentData
+      if (!authToken || !user.user) {
         router.push('/login');
         return;
       }
 
-      try {
-        const parsedData: StudentData = JSON.parse(studentData);
-        if (parsedData.memberName && parsedData.schoolName) {
-          setIsAuthenticated(true);
-        } else {
-          router.push('/login');
-          return;
-        }
-      } catch (error) {
+      // Basic presence check — if name is missing, force re-login
+      if (!user.user.name) {
         router.push('/login');
         return;
       }
@@ -847,12 +864,8 @@ export default function Quiz(): React.JSX.Element | null {
                 <h2 className="text-2xl font-bold text-[#651321] mb-2">Quiz Completed!</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
                   <div className="bg-white/50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">Student ID</div>
-                    <div className="font-semibold text-[#651321]">{completionData.memberName}</div>
-                  </div>
-                  <div className="bg-white/50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">School</div>
-                    <div className="font-semibold text-[#651321]">{completionData.schoolName}</div>
+                    <div className="text-sm text-gray-600">Student</div>
+                    <div className="font-semibold text-[#651321]">{completionData.name}</div>
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>

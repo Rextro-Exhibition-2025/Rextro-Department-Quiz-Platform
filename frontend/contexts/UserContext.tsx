@@ -4,12 +4,9 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from 'axios';
 
 interface User {
-    teamId: string;
-    memberName: string;
-    schoolName: string;
-    teamName: string;
-    authToken: string;  // Add this field
-    marks?: number;     // Make this optional since it's not in login response
+    name: string;
+    authToken: string;
+    marks?: number;
     hasEndedQuiz?: boolean;
     number: number;
     medium?: string;
@@ -58,9 +55,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
-        localStorage.removeItem('memberName');
-        localStorage.removeItem('schoolName');
-        localStorage.removeItem('teamName');
         localStorage.removeItem('marks');
         localStorage.removeItem('number');
         localStorage.removeItem('medium');
@@ -89,8 +83,26 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (response.data.success && mounted) {
                     const userData = response.data.data;
-                    setUser(userData);
-   
+                    // Normalize the backend response into our frontend User shape.
+                    const normalized = {
+                        name: (userData as any).name ?? '',
+                        authToken: (userData as any).authToken ?? localStorage.getItem('authToken') ?? '',
+                        marks: (userData as any).marks ?? 0,
+                        hasEndedQuiz: (userData as any).hasEndedQuiz ?? false,
+                        number: (userData as any).number ?? 1,
+                        medium: (userData as any).medium ?? 'E'
+                    } as any;
+
+                    // Persist minimal fields the app expects into localStorage (keeps older code working)
+                    try {
+                        localStorage.setItem('authToken', normalized.authToken);
+                        localStorage.setItem('userData', JSON.stringify(normalized));
+                    } catch (e) {
+                        // ignore storage errors
+                    }
+
+                    setUser(normalized);
+
                 }
             } catch (err) {
                 if (mounted) {
@@ -98,9 +110,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     setError(err instanceof Error ? err.message : 'An error occurred');
                     localStorage.removeItem('userData');
                     localStorage.removeItem('authToken');
-                    localStorage.removeItem('memberName');
-                    localStorage.removeItem('schoolName');
-                    localStorage.removeItem('teamName');
                     localStorage.removeItem('marks');
                     localStorage.removeItem('number');
                     setUser(null);
