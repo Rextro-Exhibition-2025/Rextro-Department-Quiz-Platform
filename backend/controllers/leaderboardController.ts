@@ -13,16 +13,22 @@ export const getLeaderboard = async (req: Request, res: Response) => {
     const limit = limitRaw ? Math.max(1, Math.min(200, Number(limitRaw))) : 50;
 
     const pipeline: any[] = [
+      // include only submitted attempts for the specified quiz
       { $match: { quizId: quizId, submitTime: { $exists: true } } },
       {
+        // group by student (ObjectId reference)
         $group: {
           _id: "$student",
           correctCount: { $sum: { $cond: ["$isCorrect", 1, 0] } },
-          totalTime: { $sum: { $ifNull: ["$timeTaken", 0] } },
+          // when the user finished the quiz (completion time)
+          completionTime: { $max: "$submitTime" },
+          // sum the timeTaken across all attempts (used for tiebreaking)
+          totalTimeTaken: { $sum: { $ifNull: ["$timeTaken", 0] } },
           attempts: { $sum: 1 }
         }
       },
       {
+        // join user details for display (name, studentId)
         $lookup: {
           from: "users",
           localField: "_id",
@@ -38,11 +44,17 @@ export const getLeaderboard = async (req: Request, res: Response) => {
           studentId: { $ifNull: ["$user.studentId", "$_id"] },
           name: { $ifNull: ["$user.name", null] },
           correctCount: 1,
-          totalTime: 1,
+          completionTime: 1,
+          totalTimeTaken: 1,
           attempts: 1
         }
       },
-      { $sort: { correctCount: -1, totalTime: 1 } },
+      // Sort per requested rules:
+      // 1) correctCount desc (more correct answers = better)
+      // 2) completionTime asc (earlier completion = better)
+      // 3) totalTimeTaken asc (less total time spent = better)
+      // 4) attempts asc (fewer attempts = better)
+      { $sort: { correctCount: -1, completionTime: 1, totalTimeTaken: 1, attempts: 1 } },
       { $limit: limit }
     ];
 
