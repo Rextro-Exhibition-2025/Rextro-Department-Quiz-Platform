@@ -13,6 +13,8 @@ import QuestionRouter from "./routes/questionRoute.js";
 import QuizRouter from "./routes/quizRoute.js";
 import AuthRouter from "./routes/authRoutes.js";
 import UploadRouter from "./routes/uploadRoutes.js";
+import AttemptRouter from "./routes/attemptRoutes.js";
+import LeaderboardRouter from "./routes/leaderboardRoutes.js";
 
 dotenv.config();
 
@@ -77,6 +79,8 @@ app.use("/api/questions", QuestionRouter);
 app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/upload", UploadRouter);
+app.use("/api/attempts", AttemptRouter);
+app.use("/api/leaderboard", LeaderboardRouter);
 
 const start = async () => {
   await connectDB();
