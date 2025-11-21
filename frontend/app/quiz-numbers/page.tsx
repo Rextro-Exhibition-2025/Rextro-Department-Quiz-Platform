@@ -4,23 +4,23 @@ import React, { useState } from "react";
 import { useRouter } from 'next/navigation';
 import type { Number } from "./quizNumbers";
 
-const TOTAL_SEATS = 40;
+const TOTAL_NUMBERS = 40;
 
-const generateSeats = (): Number[] =>
-  Array.from({ length: TOTAL_SEATS }, (_, i) => ({
+const generateNumbers = (): Number[] =>
+  Array.from({ length: TOTAL_NUMBERS }, (_, i) => ({
     id: i + 1,
     label: String(i + 1),
     taken: false,
   }));
 
 export default function DepartmentPage() {
-  const [seats, setSeats] = useState<Number[]>(() => generateSeats());
+  const [numbers, setNumbers] = useState<Number[]>(() => generateNumbers());
   const router = useRouter();
 
-  const handleSeatClick = (id: number) => {
-    setSeats((prevSeats) =>
-      prevSeats.map((seat) =>
-        seat.id === id ? { ...seat, taken: true } : seat
+  const handleNumberClick = (id: number) => {
+    setNumbers((prevNumbers) =>
+      prevNumbers.map((number) =>
+        number.id === id ? { ...number, taken: true } : number
       )
     );
   };
@@ -45,13 +45,13 @@ export default function DepartmentPage() {
         <div className="mt-6 flex justify-center">
           <div className="w-full px-2 sm:px-6 md:px-12">
             <div className="grid grid-cols-5 gap-3 sm:grid-cols-5 md:grid-cols-10 md:gap-4 lg:gap-5">
-              {seats.map((seat) => {
-                const isTaken = seat.taken;
+              {numbers.map((number) => {
+                const isTaken = number.taken;
 
                 return (
                   <button
-                    key={seat.id}
-                    onClick={() => !isTaken && handleSeatClick(seat.id)}
+                    key={number.id}
+                    onClick={() => !isTaken && handleNumberClick(number.id)}
                     disabled={isTaken}
                     className={
                       `group relative flex items-center justify-center h-10 rounded-md border-0 px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ` +
@@ -60,7 +60,7 @@ export default function DepartmentPage() {
                         : "bg-blue-200 text-gray-800 transition transform hover:-translate-y-0.5 active:scale-95"}`
                     }
                   >
-                    <span className="pointer-events-none">{seat.label}</span>
+                    <span className="pointer-events-none">{number.label}</span>
 
                     <span
                       className={
