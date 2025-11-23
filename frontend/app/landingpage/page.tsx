@@ -12,17 +12,25 @@ export default function LandingPage() {
   const [published, setPublished] = useState(false);
   const router = useRouter();
 useEffect(() => {
-	const checkPublishedStatus = async () => {
-		
-		try {
-			const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
-			const data = await response.json();
-			setPublished(data?.isPublished ?? false);
-		} catch (error) {
-			console.error('Error fetching published status:', error);
-		}
-	};
-	checkPublishedStatus();
+  const checkPublishedStatus = async () => {
+    try {
+      // Prefer the app's axios helper so baseURL, credentials and interceptors are consistent
+      const { createAdminApi } = await import('@/interceptors/admins');
+      const api = await createAdminApi();
+      const resp = await api.get('/quizzes/check-quiz-published-status');
+      setPublished((resp?.data as any)?.isPublished ?? false);
+    } catch (error: any) {
+      // Better diagnostics for network vs CORS vs server errors
+      if (error?.response) {
+        console.error('Error fetching published status: response', error.response.status, error.response.data);
+      } else if (error?.request) {
+        console.error('Error fetching published status: no response received (network/CORS/blocked)', error.message);
+      } else {
+        console.error('Error fetching published status:', error?.message ?? error);
+      }
+    }
+  };
+  checkPublishedStatus();
 }, []);
 
   useEffect(() => {

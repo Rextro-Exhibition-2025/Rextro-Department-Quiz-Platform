@@ -1,22 +1,32 @@
-import { withAuth } from "next-auth/middleware"
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export default withAuth(
-  function middleware(req) {
-    // This function will only be called if the user is authenticated
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Check if user is authenticated for protected routes
-        if (req.nextUrl.pathname.startsWith('/add-question')) {
-          return !!token;
-        }
-        return true;
-      },
-    },
+const PROTECTED_PREFIXES = ['/add-question', '/departments', '/quiz-numbers', '/quiz'];
+
+export default async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
+  if (!isProtected) return NextResponse.next();
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token) {
+    const loginUrl = new URL('/login', req.nextUrl.origin);
+    loginUrl.searchParams.set('callbackUrl', req.nextUrl.href);
+    return NextResponse.redirect(loginUrl);
   }
-)
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ['/add-question/:path*']
-}
+  matcher: [
+    '/add-question/:path*',
+    '/departments',
+    '/departments/:path*',
+    '/quiz-numbers',
+    '/quiz-numbers/:path*',
+    '/quiz',
+    '/quiz/:path*',
+  ],
+};

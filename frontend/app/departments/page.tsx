@@ -1,39 +1,89 @@
 'use client';
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createStudentApi } from '@/interceptors/student'
+import { useSession } from 'next-auth/react'
 
-const departmentList = [
-  {
-    name: "Electrical and Information Engineering",
-    color: "bg-gradient-to-r from-[#df7500] to-[#651321]",
-    text: "text-white"
-  },
-  {
-    name: "Mechanical Engineering",
-    color: "bg-gradient-to-r from-[#651321] to-[#df7500]",
-    text: "text-white"
-  },
-  {
-    name: "Civil and Environmental Engineering",
-    color: "bg-gradient-to-r from-[#df7500] to-[#651321]",
-    text: "text-white"
-  }
-]
+interface QuizSet {
+  quizId: number;
+  name: string;
+}
 
 export default function DepartmentsPage() {
   const router = useRouter();
+  const _sess = useSession();
+  const session = _sess.data;
+  const status = (_sess.status ?? 'loading') as 'loading' | 'authenticated' | 'unauthenticated';
+  const [quizSets, setQuizSets] = useState<QuizSet[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  useEffect(() => {
+    let isAlive = true;
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
 
-  const handlePick = (dept: string) => {
-    router.push(`/quiz?department=${encodeURIComponent(dept)}`);
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') return;
+
+    (async () => {
+      try {
+        const api = await createStudentApi();
+        const resp = await api.get('/quizzes/get-quiz-sets');
+        const body: any = resp?.data ?? {};
+  
+        const sets = body?.data?.quizSets || body?.quizSets || body?.quiz || body?.data || body;
+  
+        const normalized: QuizSet[] = Array.isArray(sets)
+          ? sets.map((s: any) => ({ quizId: Number(s.quizId), name: s.name ?? `Quiz ${s.quizId}` }))
+          : [];
+        if (isAlive) setQuizSets(normalized);
+      } catch (err) {
+        console.error('Error fetching quiz sets:', err);
+        if (isAlive) setQuizSets([]);
+      } finally {
+        if (isAlive) setLoading(false);
+      }
+    })();
+    return () => { isAlive = false };
+  }, [status, router]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-sm text-gray-600">Checking session...</div>
+      </div>
+    );
+  }
+  if (String(status) !== 'authenticated') {
+    return null;
+  }
+
+  
+
+  const handlePick = (quizId: number) => {
+    if (String(status) === 'loading') return;
+    if (String(status) === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+    router.push(`/quiz-numbers?quizId=${encodeURIComponent(String(quizId))}`);
   };
+  const buttonStyles = [
+    'bg-gradient-to-r from-[#df7500] to-[#651321] text-white',
+    'bg-gradient-to-r from-[#651321] to-[#df7500] text-white',
+    'bg-gradient-to-r from-[#f59e0b] to-[#7c2d12] text-white',
+  ];
 
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gradient-to-br from-[#fff7ed] to-[#ffe4e1] relative"
       style={{ position: 'relative', overflow: 'hidden' }}
     >
-      {/* White background container for image */}
       <div
         style={{
           position: 'absolute',
@@ -45,7 +95,6 @@ export default function DepartmentsPage() {
           zIndex: 0,
         }}
       />
-      {/* Background image nested inside white background */}
       <div
         style={{
           position: 'absolute',
@@ -62,7 +111,6 @@ export default function DepartmentsPage() {
           backgroundAttachment: 'scroll',
         }}
       />
-      {/* Semi-transparent overlay */}
       <div
         style={{
           position: 'absolute',
@@ -75,15 +123,19 @@ export default function DepartmentsPage() {
         }}
       />
       <div className="w-full max-w-md mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-        <h1 className="text-2xl md:text-3xl font-bold text-[#651321] mb-6 text-center">Pick Your Department</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-[#651321] mb-6 text-center">Quizzes</h1>
         <div className="flex flex-col gap-5">
-          {departmentList.map((dept) => (
+          {loading && <div className="text-center text-sm text-gray-600">Loading quizzes...</div>}
+          {!loading && (!quizSets || quizSets.length === 0) && (
+            <div className="text-center text-sm text-gray-600">No quizzes available.</div>
+          )}
+          {quizSets && quizSets.map((q, idx) => (
             <button
-              key={dept.name}
-              onClick={() => handlePick(dept.name)}
-              className={`w-full py-4 rounded-xl shadow-lg font-semibold text-lg ${dept.color} ${dept.text} transition-all duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[#df7500]`}
+              key={q.quizId}
+              onClick={() => handlePick(q.quizId)}
+              className={`w-full py-4 rounded-xl shadow-lg font-semibold text-lg ${buttonStyles[idx % buttonStyles.length]} transition-all duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[#df7500]`}
             >
-              {dept.name}
+              {q.name}
             </button>
           ))}
         </div>

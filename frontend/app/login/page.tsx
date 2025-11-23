@@ -51,7 +51,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
-      const res = await signIn('google', { callbackUrl: '/quiz', redirect: false });
+      const res = await signIn('google', { callbackUrl: '/departments', redirect: false });
 
       // If next-auth returns an error, show inline message and don't navigate
       if ((res as any)?.error) {
@@ -106,7 +106,7 @@ export default function LoginPage() {
           // Backend sets httpOnly cookie `authToken`; use returned user data to set context
           const data = responseData.data;
           setUser({ name: data.name, authToken: undefined, number: data.number ?? 1 } as any);
-          router.push('/quiz');
+          router.push('/departments');
           return;
         } else {
           setError(responseData?.message || res.statusText || 'Login failed');
@@ -154,7 +154,7 @@ export default function LoginPage() {
           authToken: data.authToken,
           number: data.number ?? 1
         } as any);
-        router.push('/quiz');
+        router.push('/departments');
       } else {
         setError(responseData?.message || res.statusText || 'Registration failed');
       }

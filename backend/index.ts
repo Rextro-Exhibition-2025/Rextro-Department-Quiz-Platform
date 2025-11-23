@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import cookieParser from 'cookie-parser';
 import connectDB from "./config/db.js";
 import UserRouter from "./routes/userRoutes.js";
 import QuestionRouter from "./routes/questionRoute.js";
@@ -26,7 +27,6 @@ const __dirname = path.dirname(__filename);
 
 const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
 
-//CORS
 app.use(cors({
   origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app'], 
   credentials: true,
@@ -37,6 +37,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cookieParser());
 
 
 
