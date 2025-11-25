@@ -11,10 +11,10 @@ export default function AdminLoginClient() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // If NextAuth redirected back with an error query param, show it inline
+    
     const err = searchParams.get('error');
     if (err) {
-      // Map known NextAuth errors to friendly messages
+      
       if (err === 'AccessDenied') setError("Access denied: your email isn't authorized for admin access.");
       else if (err === 'Verification') setError('Verification failed. The link may be invalid or expired.');
       else setError(`Authentication error: ${err}`);

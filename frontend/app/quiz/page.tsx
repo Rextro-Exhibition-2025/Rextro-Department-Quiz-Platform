@@ -263,6 +263,8 @@ export default function Quiz(): React.JSX.Element | null {
   const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
   const displayScore = completionData ? `${completionData.score.toFixed(2)}` : `${calculateScore().toFixed(2)}`;
 
+  const canSubmit = Object.keys(selectedAnswers).length > 0 && !isSubmitting;
+
   const handleGoToLeaderboard = (): void => {
     setShowCompletionCard(false);
     router.push('/leaderboard');
@@ -329,13 +331,16 @@ export default function Quiz(): React.JSX.Element | null {
           </div>
         </div>
 
-        {currentQuestion === totalQuestions - 1 && (
-          <div className="mt-6 text-center">
-            <button className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200" style={{ backgroundColor: selectedAnswers[currentQuestion] ? '#651321' : '#785158', cursor: selectedAnswers[currentQuestion] ? 'pointer' : 'not-allowed' }} onClick={handleSubmitQuiz} disabled={!selectedAnswers[currentQuestion]}>
-              Submit Quiz
-            </button>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <button
+            className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
+            style={{ backgroundColor: canSubmit ? '#651321' : '#785158', cursor: canSubmit ? 'pointer' : 'not-allowed' }}
+            onClick={handleSubmitQuiz}
+            disabled={!canSubmit}
+          >
+            Submit Answer
+          </button>
+        </div>
       </div>
 
       {showCompletionCard && completionData && (

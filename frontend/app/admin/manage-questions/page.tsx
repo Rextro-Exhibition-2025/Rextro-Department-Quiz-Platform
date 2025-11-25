@@ -85,7 +85,7 @@ useEffect(() => {
 	useEffect(() => {
 
 		    const fetchQuestions = async () => {
-			    // Only fetch questions for authenticated admin users
+			    
 			    if (status !== 'authenticated' || !(session as any)?.user?.isAdmin) return;
 			    const api = await createAdminApi();
 			try {
@@ -110,7 +110,7 @@ useEffect(() => {
 			router.push("/admin-access");
 		}
 
-		// If authenticated but not an admin, redirect to admin login with error
+		
 		if (status === 'authenticated' && !(session as any)?.user?.isAdmin) {
 			router.push('/admin-access');
 		}

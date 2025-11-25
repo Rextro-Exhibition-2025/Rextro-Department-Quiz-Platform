@@ -11,20 +11,20 @@ const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    // On Google sign-in, allow admin emails (from ADMIN_EMAILS) to sign in
-    // without requiring the backend link check. For student accounts, keep
-    // the existing backend `/auth/oauth/link` check.
+    
+    
+    
     async signIn({ user, account }) {
       console.log('Auth signIn callback invoked');
 
       if (account?.provider === 'google' && user.email) {
-        // Normalize admin emails list from env
+        
         const adminEmailsRaw = process.env.ADMIN_EMAILS || '';
         const adminEmails = adminEmailsRaw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
         const isAdminEmail = adminEmails.includes(user.email.toLowerCase());
 
-        // If this is an admin email, allow sign-in immediately so admin flows
-        // are handled by the admin UI (and won't be blocked by backend link checks).
+        
+        
         if (isAdminEmail) {
           return true;
         }
@@ -50,18 +50,18 @@ const authOptions: AuthOptions = {
         }
       }
 
-      // For non-Google providers, deny by default
+      
       return false;
     },
 
-    // Persist custom fields on the JWT that will be available in `session` callback
+    
     async jwt({ token, user }) {
-      // On initial sign in, `user` will be available — copy useful fields into the token
+      
       if (user) {
         token.email = user.email
         token.name = user.name
 
-        // Mark admin flag on the token based on environment ADMIN_EMAILS
+        
         try {
           const adminEmailsRaw = process.env.ADMIN_EMAILS || ''
           const adminEmails = adminEmailsRaw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
@@ -70,7 +70,7 @@ const authOptions: AuthOptions = {
           token.isAdmin = false
         }
 
-        // Try to fetch linked backend user (id + studentId) and attach to token
+        
         try {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
           const resp = await fetch(`${apiUrl}/auth/oauth/link`, {
@@ -93,7 +93,7 @@ const authOptions: AuthOptions = {
       return token
     },
 
-    // Create a custom short-lived JWT and attach it to the session object returned to the client
+    
     async session({ session, token }) {
       try {
         const signSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
@@ -101,14 +101,14 @@ const authOptions: AuthOptions = {
           console.warn('No JWT signing secret found (JWT_SECRET or NEXTAUTH_SECRET). Using insecure fallback.');
         }
 
-        // Build payload — keep it minimal: email, name, sub
+        
         const payload: Record<string, unknown> = {
           email: token.email,
           name: token.name,
         }
         if (token.sub) payload.sub = token.sub
 
-        // Sign a short-lived token for backend APIs to verify
+        
         const customToken = jwt.sign(payload, signSecret || 'dev_secret', {
           expiresIn: '15m',
         })
@@ -117,14 +117,14 @@ const authOptions: AuthOptions = {
         console.log(customToken,"custom token");
         
 
-        // Expose it on session.token so client-side code can read it and send as Authorization header
+        
         ;(session as any).token = customToken
 
-        // Expose admin flag on session.user so UI can adapt
+        
         try {
           ;(session as any).user = { ...(session as any).user, isAdmin: Boolean((token as any).isAdmin) }
         } catch (e) {
-          // ignore
+          
         }
       } catch (e) {
         console.error('Failed to sign custom JWT for session:', e)
@@ -135,9 +135,9 @@ const authOptions: AuthOptions = {
   },
   pages: {
     signIn: '/admin-access',
-    // Use a small server-side redirector so we can send admin-originated
-    // OAuth errors back to the admin login UI while keeping student errors
-    // routed to the student login page.
+    
+    
+    
     error: '/api/auth/error-redirect',
   },
   session: {
@@ -146,31 +146,31 @@ const authOptions: AuthOptions = {
 }
 
 
-// Use NextAuth handler directly for App Router. We export the handler for GET/POST
-// so NextAuth can operate on the Request/Response provided by Next.js.
+
+
 const nextAuthHandler = NextAuth(authOptions) as any
 
 async function forwardCookiesAndReturn(nextAuthResponse: Response, request: Request) {
   try {
-    // Clone headers from NextAuth response
+    
     const newHeaders = new Headers()
     nextAuthResponse.headers.forEach((value, key) => {
       newHeaders.set(key, value)
     })
 
-    // Try to extract NextAuth cookie (set-cookie) to call /api/auth/session
+    
     const setCookieHeader = nextAuthResponse.headers.get('set-cookie')
     if (setCookieHeader) {
-      // Extract cookie name=value pairs (strip attributes)
+      
       const cookiePairs = setCookieHeader
         .split(/, (?=[^;]+=)/g)
         .map((c) => c.split(';')[0])
         .join('; ')
 
-      // Determine frontend origin to call the session endpoint
+      
       const frontendOrigin = process.env.NEXTAUTH_URL || `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host')}`
 
-      // Request the session from NextAuth using the cookie received
+      
       try {
         const sessionResp = await fetch(`${frontendOrigin}/api/auth/session`, {
           headers: {
@@ -186,7 +186,7 @@ async function forwardCookiesAndReturn(nextAuthResponse: Response, request: Requ
           const name = sessionJson?.user?.name
 
           if (email) {
-            // Call backend linking endpoint so it can set its own httpOnly cookie
+            
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
             const backendResp = await fetch(`${apiUrl}/auth/oauth/link`, {
               method: 'POST',
@@ -194,10 +194,10 @@ async function forwardCookiesAndReturn(nextAuthResponse: Response, request: Requ
               body: JSON.stringify({ email, name }),
             })
 
-            // If backend set a cookie, forward it to the browser by appending Set-Cookie header
+            
             const backendSetCookie = backendResp.headers.get('set-cookie')
             if (backendSetCookie) {
-              // Append backend Set-Cookie header so browser stores it
+              
               newHeaders.append('set-cookie', backendSetCookie)
             }
           }
@@ -207,7 +207,7 @@ async function forwardCookiesAndReturn(nextAuthResponse: Response, request: Requ
       }
     }
 
-    // Build and return a Response with merged headers and same body/status
+    
     const body = await nextAuthResponse.text()
     return new Response(body, { status: nextAuthResponse.status, headers: newHeaders })
   } catch (err) {
@@ -216,13 +216,13 @@ async function forwardCookiesAndReturn(nextAuthResponse: Response, request: Requ
   }
 }
 
-// Export the NextAuth handler as the route entrypoints. We removed the
-// custom forwarding logic here because it caused incompatibilities with the
-// runtime Request shape in this environment. Instead, the frontend will call
-// a small helper API route `/api/auth/link` after sign-in to ask the backend
-// to set its own httpOnly cookie. That keeps the flow reliable and easier to
-// reason about.
+
+
+
+
+
+
 export { nextAuthHandler as GET, nextAuthHandler as POST }
-// Export authOptions so server components (e.g. admin layout) can import
-// it and call getServerSession(authOptions) for server-side access checks.
+
+
 export { authOptions }

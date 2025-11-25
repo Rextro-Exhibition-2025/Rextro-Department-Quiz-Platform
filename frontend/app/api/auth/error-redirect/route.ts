@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
     const target = isAdminOrigin ? `/admin-access?error=${encodeURIComponent(error)}` : `/login?error=${encodeURIComponent(error)}`
 
-    // Clear the temporary oauth_origin cookie so it doesn't affect future flows
+    
     const headers = new Headers()
     headers.set('location', target)
     headers.append('set-cookie', 'oauth_origin=; Path=/; Max-Age=0')

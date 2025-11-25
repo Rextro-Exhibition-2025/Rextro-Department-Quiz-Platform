@@ -18,13 +18,13 @@ export default function LandingPage() {
 useEffect(() => {
   const checkPublishedStatus = async () => {
     try {
-      // Prefer the app's axios helper so baseURL, credentials and interceptors are consistent
+      
       const { createAdminApi } = await import('@/interceptors/admins');
       const api = await createAdminApi();
       const resp = await api.get('/quizzes/check-quiz-published-status');
       setPublished((resp?.data as any)?.isPublished ?? false);
     } catch (error: any) {
-      // Better diagnostics for network vs CORS vs server errors
+      
       if (error?.response) {
         console.error('Error fetching published status: response', error.response.status, error.response.data);
       } else if (error?.request) {
@@ -84,16 +84,16 @@ useEffect(() => {
               disabled={!published}
               className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
-                // Require the app's local `user` (from UserContext) to navigate directly.
-                // If the UserContext has no user (e.g. localStorage cleared), send to student login
-                // even when NextAuth session exists, so the app can load user profile properly.
-                if (published) {
-                  const hasLocalUser = !!user && !userLoading;
-                  if (hasLocalUser) {
-                    router.push('/departments');
-                  } else {
-                    router.push('/login?callbackUrl=/departments');
-                  }
+                if (!published) return;
+
+                
+                
+                
+                
+                if (sessionStatus === 'authenticated' && session) {
+                  router.push('/departments');
+                } else {
+                  router.push('/login?callbackUrl=/departments');
                 }
               }}
             >

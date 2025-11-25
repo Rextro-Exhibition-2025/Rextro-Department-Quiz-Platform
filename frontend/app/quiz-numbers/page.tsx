@@ -72,17 +72,36 @@ export default function QuizNumbersPage() {
           try {
             const attemptsResp: any = await api.get(`/attempts/quiz/${quizId}`);
             const attempts: any[] = attemptsResp?.data?.data ?? [];
-      
-            const submittedSet = new Set<string>();
+
+            
+            const stateMap = new Map<string, { opened: boolean; submitted: boolean }>();
             for (const a of attempts) {
-              if (a?.submitTime && a?.question) submittedSet.add(String(a.question));
+              const qid = a?.question ? String(a.question) : null;
+              if (!qid) continue;
+              const existing = stateMap.get(qid) ?? { opened: false, submitted: false };
+
+              
+              if (a?.submitTime) {
+                existing.submitted = true;
+                existing.opened = true;
+              } else if (a?.openTime) {
+                
+                existing.opened = true;
+              }
+
+              stateMap.set(qid, existing);
             }
-            if (submittedSet.size > 0) {
-              setNumbers((prev) => prev.map((n) => ({
-                ...n,
-                taken: !!n.taken || (n.questionId ? submittedSet.has(String(n.questionId)) : false),
-                submitted: n.questionId ? submittedSet.has(String(n.questionId)) : false,
-              })));
+
+            if (stateMap.size > 0) {
+              setNumbers((prev) => prev.map((n) => {
+                const qid = n.questionId ? String(n.questionId) : null;
+                const s = qid ? stateMap.get(qid) : undefined;
+                return {
+                  ...n,
+                  taken: !!n.taken || !!s?.opened || !!s?.submitted,
+                  submitted: !!s?.submitted || !!n.submitted,
+                };
+              }));
             }
           } catch (e) {
             console.warn('Could not fetch attempts for quiz:', e);
@@ -188,7 +207,7 @@ export default function QuizNumbersPage() {
   return (
     <div className="min-h-screen flex flex-col items-center bg-white">
       <NavBar />
-      <div className="w-full max-w-4xl mt-6">
+      <div className="w-full max-w-4xl mt-6 flex-1">
         <div className="mb-6 flex justify-center">
           <img
             src="/9e244c43-ac14-4148-8ed1-d71b4a3d6c8f.png"
@@ -214,30 +233,28 @@ export default function QuizNumbersPage() {
 
                   const disabled = isSubmitted || status === 'loading' || attemptLoadingId === number.id;
 
+                  const stateText = isSubmitted ? 'Submitted' : isTakenOpen ? 'Opened' : 'Not opened';
+
                   return (
                     <button
                       key={number.id}
                       onClick={() => !disabled && handleNumberClick(number.id)}
                       disabled={disabled}
-                      className={
-                        `group relative flex items-center justify-center h-10 rounded-md border-0 px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ` +
-                        `${isSubmitted
-                          ? "bg-green-600 text-white cursor-not-allowed"
-                          : attemptLoadingId === number.id || status === 'loading'
-                          ? "bg-blue-200 text-gray-800 opacity-60 cursor-wait"
-                          : isTakenOpen
-                          ? "bg-blue-100 text-gray-800 transition transform hover:-translate-y-0.5 active:scale-95"
-                          : "bg-blue-200 text-gray-800 transition transform hover:-translate-y-0.5 active:scale-95"}`
-                      }
+                      title={stateText}
+                      aria-label={`Question ${number.label} - ${stateText}`}
+                          className={
+                            `group relative flex items-center justify-center h-10 rounded-md border-0 px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ` +
+                            `${isSubmitted
+                              ? "bg-gradient-to-r from-[#0DB3A2] to-[#005F56] text-white cursor-not-allowed"
+                              : attemptLoadingId === number.id || status === 'loading'
+                              ? "bg-[#df7500]/50 text-[#651321] opacity-60 cursor-wait"
+                              : isTakenOpen
+                              ? "bg-gradient-to-r from-[#df7500] to-[#651321] text-[#fff] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/20"
+                              : "bg-[#cd880b]/20 text-[#651321] border border-[#dfd7d0] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/10"}`
+                          }
                     >
                       <span className="pointer-events-none">{number.label}</span>
 
-                      <span
-                        className={
-                          `absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-150 ` +
-                          (isSubmitted ? " w-6 bg-green-700" : " w-0 bg-transparent")
-                        }
-                      />
                     </button>
                   );
                 })}
@@ -248,14 +265,12 @@ export default function QuizNumbersPage() {
 
       </div>
 
-      <br />
-      <br />
 
       <button
-        onClick={() => router.back()}
-        className="mb-6 px-4 py-2 bg-blue-100 text-gray-800 rounded-md font-semibold shadow-sm transition transform hover:-translate-y-0.5 active:scale-95"
+        onClick={() => router.push('/departments')}
+        className="m-8 w-58 py-3 border rounded-xl bg-white text-[#651321] font-medium shadow hover:bg-[#df7500]/10 transition"
       >
-         Go Back
+         Back to Departments
       </button>
       <Footer />
 
