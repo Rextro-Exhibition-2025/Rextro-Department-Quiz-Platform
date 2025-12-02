@@ -1,9 +1,18 @@
 openapi: 3.0.3
 info:
   title: Rextro Quiz Platform API
-  description: Complete Backend API for Rextro Quiz Platform including Authentication, Quiz Management, Question Bank, Attempts, and Leaderboards.
+  description: >
+    Complete Backend API for the Rextro Quiz Platform. 
+
+    This API handles:
+    * **User Auth:** Registration and Google OAuth linking.
+    * **Quiz Management:** Creating quiz sets, publishing, and retrieving questions.
+    * **Live Attempts:** Logic for students opening questions and submitting answers in real-time.
+    * **Leaderboards:** Aggregated ranking calculations.
+    * **Asset Management:** Image uploading via Cloudinary.
   version: 1.0.0
   contact:
+    name: API Support
     email: rmkavindudhananjaya@gmail.com
 
 servers:
@@ -14,19 +23,19 @@ servers:
 
 tags:
   - name: Auth
-    description: User registration and OAuth linking
+    description: User authentication, registration, and account linking.
   - name: Users
-    description: User management operations
+    description: User profile management and administrative user lists.
   - name: Quizzes
-    description: Quiz sets, publishing, and submissions
+    description: Core quiz logic, including fetching quizzes, submitting full results, and publishing sets.
   - name: Questions
-    description: CRUD operations for Questions (Admin)
+    description: Admin-only CRUD operations for the question bank.
   - name: Attempts
-    description: Real-time question opening and answering
+    description: Granular, question-by-question attempt tracking for students.
   - name: Leaderboard
-    description: aggregated rankings
+    description: Statistical rankings and performance metrics.
   - name: Upload
-    description: Image upload via Cloudinary
+    description: Helper endpoints for image assets.
 
 components:
   securitySchemes:
@@ -34,10 +43,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Enter the token returned from /auth/register or /auth/oauth/link
 
   schemas:
-    # --- Common Schemas ---
-    Error:
+    # --- Common Response Wrappers ---
+    StandardError:
       type: object
       properties:
         success:
@@ -45,37 +55,38 @@ components:
           example: false
         message:
           type: string
-          example: "Error description"
+          example: "Invalid credentials"
         error:
           type: string
-          description: detailed error message
+          description: Detailed stack trace or error description (dev mode only)
+          example: "User not found in database..."
 
-    SuccessResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-
-    # --- Model Schemas ---
+    # --- Domain Models ---
     User:
       type: object
       properties:
         _id:
           type: string
+          example: "65a123b3c4d5e6f7g8h9i0j1"
         name:
           type: string
+          example: "Kavindu D."
         email:
           type: string
+          format: email
+          example: "student@rextro.lk"
         studentId:
           type: string
+          description: Unique school-issued identifier
+          example: "STU-2024-001"
         authProvider:
           type: string
           enum: ["local", "google"]
+          example: "local"
         marks:
           type: number
+          description: Cumulative score across quizzes
+          example: 85.5
         createdAt:
           type: string
           format: date-time
@@ -88,22 +99,63 @@ components:
         option:
           type: string
           enum: ["A", "B", "C", "D"]
+          example: "A"
         optionText:
           type: string
+          example: "Pythagoras Theorem"
         optionImage:
           type: string
+          format: uri
+          example: "https://res.cloudinary.com/demo/image/upload/v1/options/opt_a.jpg"
         optionImagePublicId:
           type: string
+          description: Cloudinary Public ID for deletion
+          example: "options/opt_a"
 
+    # Full Question (Admin View - Includes Answer)
     Question:
       type: object
       properties:
         _id:
           type: string
+          example: "65b999..."
         quizId:
           type: integer
+          example: 1
         question:
           type: string
+          example: "Calculate the hypotenuse of a right triangle with sides 3 and 4."
+        questionImage:
+          type: string
+          example: "https://res.cloudinary.com/..."
+        questionImagePublicId:
+          type: string
+        options:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/Option"
+        correctOption:
+          type: string
+          enum: ["A", "B", "C", "D"]
+          description: The correct answer key
+          example: "C"
+
+    # Public Question (Student View - Hides Answer)
+    PublicQuestion:
+      type: object
+      description: Sanitized question object for students (correctOption is removed)
+      properties:
+        _id:
+          type: string
+          example: "65b999..."
+        quizId:
+          type: integer
+          example: 1
+        question:
+          type: string
+          example: "Calculate the hypotenuse of a right triangle with sides 3 and 4."
         questionImage:
           type: string
         questionImagePublicId:
@@ -112,9 +164,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Option"
-        correctOption:
-          type: string
-          enum: ["A", "B", "C", "D"]
 
     Quiz:
       type: object
@@ -123,16 +172,19 @@ components:
           type: string
         quizId:
           type: integer
+          description: Custom numeric ID for the quiz set
+          example: 1
         name:
           type: string
+          example: "Mathematics Term 1 Final"
         isPublished:
           type: boolean
+          example: true
         questions:
           type: array
+          description: List of sanitized questions
           items:
-            oneOf:
-              - type: string
-              - $ref: "#/components/schemas/Question"
+            $ref: "#/components/schemas/PublicQuestion"
 
     Attempt:
       type: object
@@ -141,10 +193,13 @@ components:
           type: string
         student:
           type: string
+          description: User ObjectId
         quizId:
           type: integer
+          example: 1
         question:
           type: string
+          description: Question ObjectId
         openTime:
           type: string
           format: date-time
@@ -153,42 +208,41 @@ components:
           format: date-time
         answer:
           type: string
+          example: "C"
         isCorrect:
           type: boolean
+          example: true
         timeTaken:
           type: number
-          description: Time taken in seconds
+          description: Duration in seconds
+          example: 45
 
-    # --- Request/Response specific ---
-    RegisterRequest:
+    LeaderboardEntry:
       type: object
-      required:
-        - name
-        - studentId
-        - email
       properties:
-        name:
-          type: string
         studentId:
           type: string
-        email:
+          example: "STU-001"
+        name:
           type: string
-
-    AuthResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            authToken:
-              type: string
+          example: "John Doe"
+        correctCount:
+          type: integer
+          example: 15
+        totalQuestions:
+          type: integer
+          example: 20
+        correctPercentage:
+          type: number
+          example: 75.0
+        totalTimeTaken:
+          type: number
+          description: Total seconds
+          example: 300
+        attempts:
+          type: integer
+          description: Number of questions attempted
+          example: 20
 
 paths:
   # ==============================
@@ -198,28 +252,55 @@ paths:
     post:
       tags:
         - Auth
-      summary: Register a new user
+      summary: Register a new student
+      description: Registers a user with local credentials. Returns an auth token.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RegisterRequest"
+              type: object
+              required: [name, studentId, email]
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                studentId:
+                  type: string
+                  example: "STU-2025-001"
+                email:
+                  type: string
+                  format: email
+                  example: "john@school.edu"
       responses:
         "201":
           description: User registered successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                      authToken:
+                        { type: string, description: "JWT Bearer Token" }
         "409":
-          description: User already exists
+          description: Student ID or Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardError"
 
   /auth/oauth/link:
     post:
       tags:
         - Auth
       summary: Link Google Account
+      description: Links a Google account to an existing user by email. Sets an HTTP-only cookie.
       requestBody:
         required: true
         content:
@@ -228,15 +309,12 @@ paths:
               type: object
               required: [email, googleId]
               properties:
-                email:
-                  type: string
-                googleId:
-                  type: string
-                name:
-                  type: string
+                email: { type: string, example: "john@school.edu" }
+                googleId: { type: string, example: "1029384756" }
+                name: { type: string, example: "John Doe" }
       responses:
         "200":
-          description: Account linked, cookie set
+          description: Account linked successfully
         "404":
           description: User not found
 
@@ -244,14 +322,24 @@ paths:
     get:
       tags:
         - Auth
-      summary: Get current logged in user details
+      summary: Get current user profile
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: User details
-        "401":
-          description: Unauthorized
+          description: Returns profile and current marks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      name: { type: string }
+                      marks: { type: number }
+                      authToken: { type: string }
 
   # ==============================
   # USER ROUTES
@@ -263,11 +351,23 @@ paths:
       summary: Get all users
       responses:
         "200":
-          description: List of users
+          description: List of all registered users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  count: { type: integer, example: 50 }
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+
     post:
       tags:
         - Users
-      summary: Create a user manually
+      summary: Admin create user
       requestBody:
         content:
           application/json:
@@ -276,6 +376,13 @@ paths:
       responses:
         "201":
           description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/User" }
 
   /users/{id}:
     get:
@@ -286,9 +393,17 @@ paths:
           in: path
           required: true
           schema: { type: string }
+          description: User MongoDB ID
       responses:
         "200":
           description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/User" }
     put:
       tags:
         - Users
@@ -324,10 +439,24 @@ paths:
     get:
       tags:
         - Quizzes
-      summary: Get list of available quiz sets
+      summary: List available quizzes
+      description: Returns a lightweight list of quiz IDs and names.
       responses:
         "200":
-          description: List of quizzes (ID and Name only)
+          description: List of quizzes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        quizId: { type: integer, example: 1 }
+                        name: { type: string, example: "Algebra Quiz" }
 
   /quizzes/create-quiz-set:
     post:
@@ -342,18 +471,26 @@ paths:
             schema:
               type: object
               properties:
-                quizId: { type: integer }
-                name: { type: string }
-                isPublished: { type: boolean }
+                quizId: { type: integer, example: 2 }
+                name: { type: string, example: "Geometry Basics" }
+                isPublished: { type: boolean, default: false }
       responses:
         "201":
           description: Quiz created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  quiz: { $ref: "#/components/schemas/Quiz" }
 
   /quizzes/{quizId}:
     get:
       tags:
         - Quizzes
-      summary: Get specific quiz with questions
+      summary: Get full quiz details
+      description: Fetches a quiz and all its questions.
       parameters:
         - name: quizId
           in: path
@@ -361,11 +498,20 @@ paths:
           schema: { type: integer }
       responses:
         "200":
-          description: Quiz details with questions populated
+          description: Quiz data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  quiz: { $ref: "#/components/schemas/Quiz" }
+        "404":
+          description: Quiz not found
     patch:
       tags:
         - Quizzes
-      summary: Update quiz set details (e.g. name)
+      summary: Update quiz metadata
       security:
         - BearerAuth: []
       parameters:
@@ -379,16 +525,17 @@ paths:
             schema:
               type: object
               properties:
-                name: { type: string }
+                name: { type: string, example: "New Quiz Name" }
       responses:
         "200":
-          description: Updated
+          description: Updated successfully
 
   /quizzes/submit-quiz:
     post:
       tags:
         - Quizzes
-      summary: Submit full quiz to calculate score
+      summary: Submit entire quiz
+      description: Calculates the final score based on all answers and updates the user's profile.
       security:
         - BearerAuth: []
       requestBody:
@@ -398,43 +545,75 @@ paths:
               type: object
               required: [quizId, submittedAnswers]
               properties:
-                quizId: { type: integer }
+                quizId: { type: integer, example: 1 }
                 submittedAnswers:
                   type: array
                   items:
                     type: object
                     properties:
-                      questionId: { type: integer }
-                      answer: { type: string }
+                      questionId:
+                        {
+                          type: integer,
+                          description: "Index of the question",
+                          example: 0,
+                        }
+                      answer: { type: string, example: "A" }
       responses:
         "200":
-          description: Score calculated and user marks updated
+          description: Submission processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      quizId: { type: integer }
+                      score: { type: number, example: 80.0 }
 
   /quizzes/check-quiz-published-status:
     get:
       tags:
         - Quizzes
-      summary: Check if Quiz ID 1 is published
+      summary: Check specific quiz status
+      description: Hardcoded to check Quiz ID 1 currently.
       responses:
         "200":
           description: Status returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  isPublished: { type: boolean }
 
   /quizzes/publish-all-quizzes:
     post:
       tags:
         - Quizzes
-      summary: Set all quizzes to published (Admin)
+      summary: Publish ALL quizzes (Admin)
       security:
         - BearerAuth: []
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
 
   /quizzes/unpublish-all-quizzes:
     post:
       tags:
         - Quizzes
-      summary: Set all quizzes to unpublished (Admin)
+      summary: Unpublish ALL quizzes (Admin)
       security:
         - BearerAuth: []
       responses:
@@ -445,10 +624,25 @@ paths:
     get:
       tags:
         - Quizzes
-      summary: Get global leaderboard based on user marks
+      summary: Global User Leaderboard
+      description: Returns top 50 users sorted by total marks.
       responses:
         "200":
-          description: Top 50 users
+          description: Top users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        studentId: { type: string }
+                        marks: { type: number }
 
   # ==============================
   # QUESTION ROUTES
@@ -458,15 +652,26 @@ paths:
       tags:
         - Questions
       summary: Get all questions (Admin)
+      description: Returns all questions including correct answers.
       security:
         - BearerAuth: []
       responses:
         "200":
           description: List of all questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Question"
     post:
       tags:
         - Questions
-      summary: Create a new question (Admin)
+      summary: Create a new question
       security:
         - BearerAuth: []
       requestBody:
@@ -477,6 +682,13 @@ paths:
       responses:
         "201":
           description: Question created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Question" }
 
   /questions/{questionId}:
     get:
@@ -493,10 +705,17 @@ paths:
       responses:
         "200":
           description: Question data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: "#/components/schemas/Question" }
     put:
       tags:
         - Questions
-      summary: Edit question (Admin)
+      summary: Edit question
       security:
         - BearerAuth: []
       parameters:
@@ -515,7 +734,7 @@ paths:
     delete:
       tags:
         - Questions
-      summary: Delete question (Admin)
+      summary: Delete question
       security:
         - BearerAuth: []
       parameters:
@@ -534,7 +753,8 @@ paths:
     post:
       tags:
         - Attempts
-      summary: Open/Start an attempt for a question
+      summary: Start a question attempt
+      description: Records the `openTime` for a specific question to track duration.
       security:
         - BearerAuth: []
       requestBody:
@@ -544,24 +764,25 @@ paths:
               type: object
               required: [quizId, questionId]
               properties:
-                quizId: { type: integer }
-                questionId: { type: string }
+                quizId: { type: integer, example: 1 }
+                questionId: { type: string, example: "65b123..." }
       responses:
         "200":
-          description: Attempt retrieved or created
+          description: Attempt started
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success: { type: boolean }
+                  success: { type: boolean, example: true }
                   data: { $ref: "#/components/schemas/Attempt" }
 
   /attempts/submit:
     post:
       tags:
         - Attempts
-      summary: Submit an answer for a question
+      summary: Submit single question answer
+      description: Validates answer, records `submitTime`, calculates `timeTaken`, and stores result.
       security:
         - BearerAuth: []
       requestBody:
@@ -571,9 +792,9 @@ paths:
               type: object
               required: [quizId, questionId, answer]
               properties:
-                quizId: { type: integer }
-                questionId: { type: string }
-                answer: { type: string }
+                quizId: { type: integer, example: 1 }
+                questionId: { type: string, example: "65b123..." }
+                answer: { type: string, example: "C" }
       responses:
         "200":
           description: Answer submitted
@@ -582,15 +803,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  success: { type: boolean }
-                  isCorrect: { type: boolean }
+                  success: { type: boolean, example: true }
+                  isCorrect: { type: boolean, example: true }
                   data: { $ref: "#/components/schemas/Attempt" }
 
   /attempts/quiz/{quizId}:
     get:
       tags:
         - Attempts
-      summary: Get all attempts for a specific quiz by the current user
+      summary: Get user attempts
+      description: Returns all attempts made by the logged-in user for a specific quiz.
       security:
         - BearerAuth: []
       parameters:
@@ -601,6 +823,15 @@ paths:
       responses:
         "200":
           description: List of attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Attempt" }
 
   # ==============================
   # LEADERBOARD ROUTES
@@ -609,18 +840,30 @@ paths:
     get:
       tags:
         - Leaderboard
-      summary: Get comprehensive leaderboard with stats
+      summary: Quiz-Specific Leaderboard
+      description: Returns detailed stats (accuracy, time taken) for a specific quiz.
       parameters:
         - name: quizId
           in: query
           required: true
           schema: { type: integer }
+          example: 1
         - name: limit
           in: query
-          schema: { type: integer }
+          schema: { type: integer, default: 50 }
+          description: Max number of records to return
       responses:
         "200":
-          description: Leaderboard data with completion times and accuracy
+          description: Leaderboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LeaderboardEntry"
 
   # ==============================
   # UPLOAD ROUTES
@@ -639,9 +882,12 @@ paths:
               properties:
                 image:
                   type: string
-                  description: Base64 string
+                  description: Base64 encoded image string
+                  example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
                 folder:
                   type: string
+                  default: "department-quiz/quiz-images"
+                  example: "department-quiz/quiz-images"
       responses:
         "200":
           description: Upload successful
@@ -650,12 +896,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  success: { type: boolean }
+                  success: { type: boolean, example: true }
                   data:
                     type: object
                     properties:
-                      url: { type: string }
-                      publicId: { type: string }
+                      url:
+                        {
+                          type: string,
+                          example: "https://res.cloudinary.com/...",
+                        }
+                      publicId: { type: string, example: "folder/image_id" }
 
   /upload/delete:
     delete:
@@ -669,7 +919,15 @@ paths:
               type: object
               required: [publicId]
               properties:
-                publicId: { type: string }
+                publicId: { type: string, example: "folder/image_id" }
       responses:
         "200":
           description: Image deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message:
+                    { type: string, example: "Image deleted successfully" }
