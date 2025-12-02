@@ -62,21 +62,21 @@ export default function QuizNumbersPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(44,24,16,0.4)_100%)] pointer-events-none z-10"></div>
 
       {/* Header Banner */}
-      <header className="relative z-20 pt-8 pb-4 text-center">
-        <div className="inline-block relative px-12 py-4">
+      <header className="relative z-20 pt-4 md:pt-8 pb-2 md:pb-4 text-center">
+        <div className="inline-block relative px-8 py-3 md:px-12 md:py-4">
           {/* Banner Background (SVG or CSS shape) */}
           <div className="absolute inset-0 bg-[var(--parchment-dark)] transform -skew-x-12 border-2 border-[var(--sepia)] shadow-lg"></div>
           <div className="absolute inset-0 bg-[var(--parchment)] transform skew-x-12 border-2 border-[var(--sepia)] shadow-lg opacity-80"></div>
 
-          <h1 className="relative text-4xl md:text-5xl font-bold text-[var(--ink-dark)] drop-shadow-md tracking-wider">
+          <h1 className="relative text-3xl md:text-5xl font-bold text-[var(--ink-dark)] drop-shadow-md tracking-wider">
             The Quest Map
           </h1>
-          <p className="relative text-[var(--sepia)] italic mt-1 font-bold">Journey of Knowledge</p>
+          <p className="relative text-[var(--sepia)] text-sm md:text-base italic mt-1 font-bold">Journey of Knowledge</p>
         </div>
       </header>
 
       {/* Main Map Area */}
-      <main className="relative w-full max-w-6xl mx-auto h-[80vh] mt-4">
+      <main className="relative w-full max-w-6xl mx-auto h-[75vh] md:h-[80vh] mt-2 md:mt-4">
 
         {/* SVG Path Layer */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -121,7 +121,7 @@ export default function QuizNumbersPage() {
                 top: `${point.y}%`,
               }}
             >
-              <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
+              <div className="relative w-12 h-12 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
                 {/* Wax Seal / Coin Background */}
                 <div className="absolute inset-0 drop-shadow-lg">
                   <Image
@@ -134,12 +134,12 @@ export default function QuizNumbersPage() {
                 </div>
 
                 {/* Number */}
-                <span className="relative font-bold text-xl md:text-2xl text-[var(--parchment-light)] drop-shadow-md font-serif group-hover:text-white">
+                <span className="relative font-bold text-lg md:text-2xl text-[var(--parchment-light)] drop-shadow-md font-serif group-hover:text-white">
                   {q}
                 </span>
 
                 {/* Hover Tooltip */}
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[var(--parchment-light)] border border-[var(--sepia)] px-3 py-1 rounded shadow-md text-sm font-bold whitespace-nowrap text-[var(--ink-dark)] pointer-events-none">
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[var(--parchment-light)] border border-[var(--sepia)] px-3 py-1 rounded shadow-md text-xs md:text-sm font-bold whitespace-nowrap text-[var(--ink-dark)] pointer-events-none hidden md:block">
                   Question {q}
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function QuizNumbersPage() {
         {/* Decorative Elements */}
 
         {/* Compass Rose */}
-        <div className="absolute bottom-8 right-8 w-32 h-32 md:w-48 md:h-48 opacity-80 pointer-events-none">
+        <div className="absolute bottom-4 right-4 w-20 h-20 md:bottom-8 md:right-8 md:w-48 md:h-48 opacity-80 pointer-events-none">
           <Image src="/compass-rose.svg" alt="Compass" fill className="object-contain compass-spin" />
         </div>
 
@@ -167,16 +167,16 @@ export default function QuizNumbersPage() {
       </main>
 
       {/* Corner Decorations */}
-      <div className="fixed top-0 left-0 w-32 h-32 pointer-events-none z-50">
+      <div className="fixed top-0 left-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50">
         <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
       </div>
-      <div className="fixed top-0 right-0 w-32 h-32 pointer-events-none z-50 transform scale-x-[-1]">
+      <div className="fixed top-0 right-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-x-[-1]">
         <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
       </div>
-      <div className="fixed bottom-0 left-0 w-32 h-32 pointer-events-none z-50 transform scale-y-[-1]">
+      <div className="fixed bottom-0 left-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-y-[-1]">
         <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
       </div>
-      <div className="fixed bottom-0 right-0 w-32 h-32 pointer-events-none z-50 transform scale-[-1]">
+      <div className="fixed bottom-0 right-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-[-1]">
         <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
       </div>
 
