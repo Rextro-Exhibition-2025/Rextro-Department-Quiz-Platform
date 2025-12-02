@@ -383,25 +383,46 @@ export default function Quiz(): React.JSX.Element | null {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+    <div className="min-h-screen p-4 relative" style={{ 
+      background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)'
+    }}>
       <Confetti show={showCompletionCard} />
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
+      {/* Parchment texture */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`
+      }} />
+      {/* Map grid */}
+      <div className="absolute inset-0 map-grid pointer-events-none" style={{ zIndex: 0 }} />
 
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-        <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg p-4 mb-6">
+        <div className="sticky top-0 z-10 parchment-card rounded-2xl p-4 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
           <div className="flex items-center justify-between">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">Quiz Challenge</h1>
+            <h1 className="text-xl md:text-2xl font-bold" style={{
+              fontFamily: 'Cinzel, serif',
+              color: '#651321',
+              letterSpacing: '0.03em'
+            }}>Quest Challenge</h1>
             <div>
-              <button onClick={() => router.back()} className="flex items-center space-x-2 px-4 py-2 rounded-md font-medium text-white hover:opacity-90 shadow-lg" style={{ backgroundColor: '#651321' }}>
-                <span>Back</span>
+              <button onClick={() => router.back()} className="ancient-button flex items-center space-x-2 px-4 py-2 rounded-md font-medium shadow-lg">
+                <span>Return</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="parchment-card rounded-2xl p-6 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
           <div className="my-8">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">{currentQuestion + 1}. {currentQuestionData?.question ?? 'No question available'}</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-6" style={{
+              fontFamily: 'Cinzel, serif',
+              color: '#2C1810',
+              letterSpacing: '0.02em'
+            }}>{currentQuestion + 1}. {currentQuestionData?.question ?? 'No question available'}</h2>
 
             {currentQuestionData?.image && (
               <div className="mb-6 flex justify-center">
@@ -412,15 +433,15 @@ export default function Quiz(): React.JSX.Element | null {
 
           <div className="grid gap-4">
             {Array.isArray(currentQuestionData?.answers) && currentQuestionData.answers.map((answer) => (
-              <button key={answer.id} onClick={() => handleAnswerSelect(answer.id)} className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${selectedAnswer === answer.id ? 'shadow-md' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`} style={selectedAnswer === answer.id ? { borderColor: '#DF7500', backgroundColor: '#DF7500008' } : {}}>
+              <button key={answer.id} onClick={() => handleAnswerSelect(answer.id)} className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${selectedAnswer === answer.id ? 'shadow-md' : 'hover:shadow-sm'}`} style={selectedAnswer === answer.id ? { borderColor: '#C9A961', backgroundColor: 'rgba(201, 169, 97, 0.1)', background: 'linear-gradient(135deg, rgba(244, 232, 208, 0.8) 0%, rgba(232, 213, 181, 0.8) 100%)' } : { borderColor: '#704214', backgroundColor: 'rgba(255, 248, 231, 0.5)' }}>
                 <div className="flex items-center space-x-4">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedAnswer === answer.id ? 'text-white' : 'border-gray-300'}`} style={selectedAnswer === answer.id ? { borderColor: '#DF7500', backgroundColor: '#DF7500' } : {}}>
+                  <div className={`w-6 h-6 border-2 flex items-center justify-center transition-all ${selectedAnswer === answer.id ? 'text-white' : ''}`} style={selectedAnswer === answer.id ? { borderColor: '#651321', backgroundColor: '#651321', borderRadius: '3px', transform: 'rotate(3deg)' } : { borderColor: '#704214', borderRadius: '3px', transform: 'rotate(-2deg)', backgroundColor: 'transparent' }}>
                     {selectedAnswer === answer.id && (<Check size={16} className="text-white" />)}
                   </div>
                   <div className="flex-1">
                     {answer.image && !answer.text && (<img src={answer.image} alt={`Option ${answer.id}`} className="w-full max-w-2xl h-auto object-contain rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer mx-auto" style={{ maxHeight: '400px' }} />)}
-                    {answer.text && !answer.image && (<span className="text-gray-800 font-medium text-lg">{answer.text}</span>)}
-                    {answer.text && answer.image && (<div className="flex flex-col md:flex-row items-center md:space-x-6 space-y-3 md:space-y-0"><img src={answer.image} alt={`Option ${answer.id}`} className="w-full md:w-96 h-auto object-contain rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer" style={{ maxHeight: '300px' }} /><span className="text-gray-800 font-medium text-lg">{answer.text}</span></div>)}
+                    {answer.text && !answer.image && (<span className="font-medium text-lg" style={{ color: '#2C1810', fontFamily: 'Crimson Text, serif' }}>{answer.text}</span>)}
+                    {answer.text && answer.image && (<div className="flex flex-col md:flex-row items-center md:space-x-6 space-y-3 md:space-y-0"><img src={answer.image} alt={`Option ${answer.id}`} className="w-full md:w-96 h-auto object-contain rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer" style={{ maxHeight: '300px', border: '2px solid #704214', backgroundColor: '#FFF8E7' }} /><span className="font-medium text-lg" style={{ color: '#2C1810', fontFamily: 'Crimson Text, serif' }}>{answer.text}</span></div>)}
                   </div>
                 </div>
               </button>
@@ -430,34 +451,50 @@ export default function Quiz(): React.JSX.Element | null {
 
         <div className="mt-6 text-center">
           <button
-            className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
-            style={{ backgroundColor: canSubmit ? '#651321' : '#785158', cursor: canSubmit ? 'pointer' : 'not-allowed' }}
+            className="ancient-button px-8 py-4 rounded-xl font-bold hover:shadow-xl transition-all duration-200 relative"
+            style={{ 
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              opacity: canSubmit ? 1 : 0.5,
+              fontSize: '1.1rem',
+              letterSpacing: '0.05em'
+            }}
             onClick={handleSubmitQuiz}
             disabled={!canSubmit}
           >
-            Submit Answer
+            <span className="relative z-10">Submit Scroll</span>
           </button>
         </div>
       </div>
 
       {showCompletionCard && completionData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
+          <div className="absolute inset-0 backdrop-blur-xl" style={{ background: 'rgba(44, 24, 16, 0.7)' }} />
           <div className="relative max-w-2xl w-full mx-4">
-            <div className="p-6 bg-white/95 rounded-2xl border border-white/30 shadow-lg">
+            <div className="parchment-card p-8 rounded-2xl shadow-2xl relative">
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                <div className="inline-flex items-center justify-center w-20 h-20 mb-4 relative">
+                  <img src="/wax-seal.svg" alt="Completed" className="w-full h-full" />
+                  <svg className="w-8 h-8 absolute" style={{ color: '#F4E8D0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h2 className="text-2xl font-bold text-[#651321] mb-2">Quiz Completed!</h2>
+                <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Cinzel, serif', color: '#651321', letterSpacing: '0.05em' }}>Quest Completed!</h2>
                
-                <div className="mt-4 text-sm text-gray-600">Answered {completionData.answeredQuestions} of {completionData.totalQuestions} questions</div>
+                <div className="mt-4 text-sm handwritten" style={{ color: '#4A3426' }}>Answered {completionData.answeredQuestions} of {completionData.totalQuestions} questions</div>
                 <div className="mt-6 flex items-center justify-center space-x-4">
-                  <button onClick={() => { setShowCompletionCard(false); router.push(`/quiz-numbers?quizId=${quizId}`); }} className="px-6 py-3 rounded-full font-semibold text-lg bg-white border border-gray-200 text-gray-800 hover:opacity-90 transition-all duration-200 shadow-sm">
-                    Back to Questions
+                  <button onClick={() => { setShowCompletionCard(false); router.push(`/quiz-numbers?quizId=${quizId}`); }} className="px-6 py-3 rounded-full font-bold text-lg transition-all duration-200 shadow-sm" style={{
+                    fontFamily: 'Cinzel, serif',
+                    background: 'rgba(244, 232, 208, 0.8)',
+                    border: '2px solid #704214',
+                    color: '#2C1810',
+                    letterSpacing: '0.03em'
+                  }}>
+                    Return to Scrolls
                   </button>
 
-                  <button onClick={handleGoToLeaderboard} className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-8 rounded-full font-semibold text-lg hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg">View Leaderboard</button>
+                  <button onClick={handleGoToLeaderboard} className="ancient-button py-3 px-8 rounded-full font-bold text-lg hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg" style={{ letterSpacing: '0.03em' }}>View Champions</button>
                 </div>
               </div>
             </div>

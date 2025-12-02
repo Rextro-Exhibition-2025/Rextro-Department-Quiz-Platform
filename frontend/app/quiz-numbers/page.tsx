@@ -1,278 +1,184 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createStudentApi } from '@/interceptors/student';
-import NavBar from '@/components/NavBar/NavBar';
-import Footer from '@/components/Footer/Footer';
-import type { Number } from './quizNumbers';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function QuizNumbersPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const quizIdParam = searchParams.get('quizId');
-  const quizId = quizIdParam ? Number(quizIdParam) : null;
+  const quizId = searchParams.get("quizId") || "1";
 
-  const [numbers, setNumbers] = useState<Number[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [attemptLoadingId, setAttemptLoadingId] = useState<number | null>(null);
-  const [title, setTitle] = useState<string>('Quiz');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { data: session, status } = useSession();
+  // Mock data for quiz numbers (10 questions)
+  const questions = Array.from({ length: 10 }, (_, i) => i + 1);
 
-  useEffect(() => {
-    let mounted = true;
-    if (status === 'loading') return;
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
+  // Path coordinates for a winding road (percentage based for responsiveness)
+  // These points will be used to draw the SVG path and position markers
+  const pathPoints = [
+    { x: 10, y: 80 },
+    { x: 25, y: 65 },
+    { x: 15, y: 45 },
+    { x: 35, y: 30 },
+    { x: 55, y: 40 },
+    { x: 70, y: 25 },
+    { x: 85, y: 45 },
+    { x: 75, y: 65 },
+    { x: 90, y: 80 },
+    { x: 95, y: 60 }, // Extra point for path end
+  ];
+
+  // Generate SVG path string
+  // Using cubic bezier curves for smooth winding road
+  const generatePath = () => {
+    if (pathPoints.length < 2) return "";
+
+    let d = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+
+    for (let i = 0; i < pathPoints.length - 1; i++) {
+      const p1 = pathPoints[i];
+      const p2 = pathPoints[i + 1];
+
+      // Control points for curvature
+      // Alternating curve direction for "winding" effect
+      const cp1x = p1.x + (p2.x - p1.x) / 2;
+      const cp1y = i % 2 === 0 ? p1.y - 15 : p1.y + 15;
+
+      const cp2x = p1.x + (p2.x - p1.x) / 2;
+      const cp2y = i % 2 === 0 ? p2.y + 15 : p2.y - 15;
+
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
     }
 
-    (async () => {
-      if (!quizId || Number.isNaN(quizId)) {
-        if (quizIdParam && Number.isNaN(Number(quizIdParam))) {
-          setErrorMessage('Invalid quizId provided in URL.');
-        }
-  
-        if (mounted) {
-          setNumbers(Array.from({ length: 40 }, (_, i) => ({ id: i + 1, label: String(i + 1), taken: false })));
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const api = await createStudentApi();
-        const url = `/quizzes/${quizId}`;
-        console.log('Fetching quiz from', url);
-        const resp = await api.get(url);
-        const body: any = resp?.data ?? {};
-        const quiz = body?.quiz;
-        const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
-        const total = questions.length || 40;
-  
-        const generated: Number[] = Array.from({ length: total }, (_, i) => {
-          const q = questions[i];
-          return {
-            id: i + 1,
-            label: String(i + 1),
-            taken: false,
-            questionId: q?._id ?? undefined,
-          } as Number;
-        });
-        if (mounted) {
-    
-          const init = generated.map((g) => ({ ...g, submitted: false }));
-          setNumbers(init);
-          setTitle(quiz?.name ?? `Quiz ${quizId}`);
-          setErrorMessage(null);
-
-    
-          try {
-            const attemptsResp: any = await api.get(`/attempts/quiz/${quizId}`);
-            const attempts: any[] = attemptsResp?.data?.data ?? [];
-
-            
-            const stateMap = new Map<string, { opened: boolean; submitted: boolean }>();
-            for (const a of attempts) {
-              const qid = a?.question ? String(a.question) : null;
-              if (!qid) continue;
-              const existing = stateMap.get(qid) ?? { opened: false, submitted: false };
-
-              
-              if (a?.submitTime) {
-                existing.submitted = true;
-                existing.opened = true;
-              } else if (a?.openTime) {
-                
-                existing.opened = true;
-              }
-
-              stateMap.set(qid, existing);
-            }
-
-            if (stateMap.size > 0) {
-              setNumbers((prev) => prev.map((n) => {
-                const qid = n.questionId ? String(n.questionId) : null;
-                const s = qid ? stateMap.get(qid) : undefined;
-                return {
-                  ...n,
-                  taken: !!n.taken || !!s?.opened || !!s?.submitted,
-                  submitted: !!s?.submitted || !!n.submitted,
-                };
-              }));
-            }
-          } catch (e) {
-            console.warn('Could not fetch attempts for quiz:', e);
-          }
-        }
-      } catch (err: any) {
-  
-        console.error('Error fetching quiz questions:', err);
-        let friendly = 'Failed to fetch quiz.';
-        if (err?.response) {
-          const status = err.response.status;
-          const data = err.response.data;
-          if (status === 404) {
-            friendly = data?.message || `Quiz with id ${quizId} not found.`;
-          } else if (data?.message) {
-            friendly = data.message;
-          } else {
-            friendly = `Server returned ${status}`;
-          }
-        } else if (err?.message) {
-          friendly = err.message;
-        }
-
-        if (mounted) {
-          setErrorMessage(friendly);
-          setNumbers(Array.from({ length: 40 }, (_, i) => ({ id: i + 1, label: String(i + 1), taken: false })));
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => { mounted = false };
-  }, [quizId, status, router]);
-
-  const handleNumberClick = (id: number) => {
-    if (status === 'loading') {
-      return;
-    }
-
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (!quizId) {
-      router.push('/login');
-      return;
-    }
-
-    const selected = numbers.find((n) => n.id === id);
-    const questionId = selected?.questionId;
-
-    const navigateToQuestion = () => {
-      const questionIndex = id - 1;
-      router.push(`/quiz?quizId=${encodeURIComponent(String(quizId))}&q=${encodeURIComponent(String(questionIndex))}`);
-    };
-
-    if (!questionId) {
-      setNumbers((prevNumbers) =>
-        prevNumbers.map((number) =>
-          number.id === id ? { ...number, taken: true } : number
-        )
-      );
-      navigateToQuestion();
-      return;
-    }
-
-    (async () => {
-      setAttemptLoadingId(id);
-      try {
-        const api = await createStudentApi();
-        const resp = await api.post('/attempts/open', { quizId, questionId });
-  
-        if ((resp?.data as any)?.success) {
-          setNumbers((prevNumbers) =>
-            prevNumbers.map((number) =>
-              number.id === id ? { ...number, taken: true } : number
-            )
-          );
-        }
-        navigateToQuestion();
-      } catch (err: any) {
-        console.error('Failed to open attempt:', err);
-        let friendly = 'Failed to open attempt.';
-        if (err?.response) {
-          const status = err.response.status;
-          const data = err.response.data;
-          if (data?.message) friendly = data.message;
-          else friendly = `Server returned ${status}`;
-        } else if (err?.message) {
-          friendly = err.message;
-        }
-        setErrorMessage(friendly);
-  
-        navigateToQuestion();
-      } finally {
-        setAttemptLoadingId(null);
-      }
-    })();
+    return d;
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white">
-      <NavBar />
-      <div className="w-full max-w-4xl mt-6 flex-1">
-        <div className="mb-6 flex justify-center">
-          <img
-            src="/9e244c43-ac14-4148-8ed1-d71b4a3d6c8f.png"
-            alt="reference"
-            className="hidden"
+    <div className="min-h-screen w-full relative overflow-hidden bg-[url('/parchment-bg.png')] bg-cover bg-center bg-no-repeat text-[var(--ink-dark)] font-serif">
+      {/* Overlay Textures */}
+      <div className="absolute inset-0 bg-[var(--parchment)] opacity-20 mix-blend-multiply pointer-events-none"></div>
+      <div className="absolute inset-0 map-grid pointer-events-none"></div>
+
+      {/* Vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(44,24,16,0.4)_100%)] pointer-events-none z-10"></div>
+
+      {/* Header Banner */}
+      <header className="relative z-20 pt-8 pb-4 text-center">
+        <div className="inline-block relative px-12 py-4">
+          {/* Banner Background (SVG or CSS shape) */}
+          <div className="absolute inset-0 bg-[var(--parchment-dark)] transform -skew-x-12 border-2 border-[var(--sepia)] shadow-lg"></div>
+          <div className="absolute inset-0 bg-[var(--parchment)] transform skew-x-12 border-2 border-[var(--sepia)] shadow-lg opacity-80"></div>
+
+          <h1 className="relative text-4xl md:text-5xl font-bold text-[var(--ink-dark)] drop-shadow-md tracking-wider">
+            The Quest Map
+          </h1>
+          <p className="relative text-[var(--sepia)] italic mt-1 font-bold">Journey of Knowledge</p>
+        </div>
+      </header>
+
+      {/* Main Map Area */}
+      <main className="relative w-full max-w-6xl mx-auto h-[80vh] mt-4">
+
+        {/* SVG Path Layer */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+          {/* Shadow Path */}
+          <path
+            d={generatePath()}
+            fill="none"
+            stroke="rgba(44,24,16,0.2)"
+            strokeWidth="1.5"
+            strokeDasharray="2 1"
+            className="blur-[1px]"
           />
-        </div>
+          {/* Main Path */}
+          <path
+            d={generatePath()}
+            fill="none"
+            stroke="var(--deep-brown)"
+            strokeWidth="0.8"
+            strokeDasharray="3 2"
+            strokeLinecap="round"
+          />
+        </svg>
 
-        <h1 className="text-center text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl md:text-3xl">
-          {title}
-        </h1>
-        <br />
+        {/* Markers */}
+        {questions.map((q, index) => {
+          // We need to interpolate positions along the curve for better placement if points don't match exactly 1:1 with questions
+          // For simplicity in this mockup, we'll map questions directly to points or interpolate slightly if needed.
+          // Let's just use the defined points for the first few, and maybe add more points if needed.
+          // Actually, let's just place them at the points we defined.
+          const point = pathPoints[index % pathPoints.length];
 
-        <div className="mt-6 flex justify-center">
-          <div className="w-full px-2 sm:px-6 md:px-12">
-            {loading ? (
-              <div className="text-center text-sm text-gray-600">Loading...</div>
-            ) : (
-              <div className="grid grid-cols-5 gap-3 sm:grid-cols-5 md:grid-cols-10 md:gap-4 lg:gap-5">
-                {numbers.map((number) => {
-                  const isSubmitted = !!number.submitted;
-                  const isTakenOpen = !!number.taken && !isSubmitted;
+          // Randomize slight offset for "hand-drawn" feel
+          const randomRotate = (index * 13) % 20 - 10;
 
-                  const disabled = isSubmitted || status === 'loading' || attemptLoadingId === number.id;
+          return (
+            <Link
+              href={`/quiz?id=${quizId}&q=${q}`}
+              key={q}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 group z-20 hover:z-30 transition-all duration-300"
+              style={{
+                left: `${point.x}%`,
+                top: `${point.y}%`,
+              }}
+            >
+              <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
+                {/* Wax Seal / Coin Background */}
+                <div className="absolute inset-0 drop-shadow-lg">
+                  <Image
+                    src="/wax-seal.svg"
+                    alt="Seal"
+                    fill
+                    className={`object-contain opacity-90 group-hover:opacity-100 transition-opacity`}
+                    style={{ transform: `rotate(${randomRotate}deg)` }}
+                  />
+                </div>
 
-                  const stateText = isSubmitted ? 'Submitted' : isTakenOpen ? 'Opened' : 'Not opened';
+                {/* Number */}
+                <span className="relative font-bold text-xl md:text-2xl text-[var(--parchment-light)] drop-shadow-md font-serif group-hover:text-white">
+                  {q}
+                </span>
 
-                  return (
-                    <button
-                      key={number.id}
-                      onClick={() => !disabled && handleNumberClick(number.id)}
-                      disabled={disabled}
-                      title={stateText}
-                      aria-label={`Question ${number.label} - ${stateText}`}
-                          className={
-                            `group relative flex items-center justify-center h-10 rounded-md border-0 px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ` +
-                            `${isSubmitted
-                              ? "bg-gradient-to-r from-[#0DB3A2] to-[#005F56] text-white cursor-not-allowed"
-                              : attemptLoadingId === number.id || status === 'loading'
-                              ? "bg-[#df7500]/50 text-[#651321] opacity-60 cursor-wait"
-                              : isTakenOpen
-                              ? "bg-gradient-to-r from-[#df7500] to-[#651321] text-[#fff] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/20"
-                              : "bg-[#cd880b]/20 text-[#651321] border border-[#dfd7d0] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/10"}`
-                          }
-                    >
-                      <span className="pointer-events-none">{number.label}</span>
-
-                    </button>
-                  );
-                })}
+                {/* Hover Tooltip */}
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[var(--parchment-light)] border border-[var(--sepia)] px-3 py-1 rounded shadow-md text-sm font-bold whitespace-nowrap text-[var(--ink-dark)] pointer-events-none">
+                  Question {q}
+                </div>
               </div>
-            )}
-          </div>
+            </Link>
+          );
+        })}
+
+        {/* Decorative Elements */}
+
+        {/* Compass Rose */}
+        <div className="absolute bottom-8 right-8 w-32 h-32 md:w-48 md:h-48 opacity-80 pointer-events-none">
+          <Image src="/compass-rose.svg" alt="Compass" fill className="object-contain compass-spin" />
         </div>
 
+        {/* Globe/Ship */}
+        <div className="absolute top-10 left-10 w-24 h-24 opacity-60 pointer-events-none hidden md:block">
+          <Image src="/globe.svg" alt="Globe" fill className="object-contain" />
+        </div>
+
+        {/* Scroll Decoration */}
+        <div className="absolute bottom-10 left-20 w-32 h-auto opacity-70 pointer-events-none hidden md:block transform -rotate-12">
+          <Image src="/scroll-decoration.svg" alt="Scroll" width={120} height={60} className="object-contain" />
+        </div>
+
+      </main>
+
+      {/* Corner Decorations */}
+      <div className="fixed top-0 left-0 w-32 h-32 pointer-events-none z-50">
+        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
       </div>
-
-
-      <button
-        onClick={() => router.push('/departments')}
-        className="m-8 w-58 py-3 border rounded-xl bg-white text-[#651321] font-medium shadow hover:bg-[#df7500]/10 transition"
-      >
-         Back to Departments
-      </button>
-      <Footer />
+      <div className="fixed top-0 right-0 w-32 h-32 pointer-events-none z-50 transform scale-x-[-1]">
+        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      </div>
+      <div className="fixed bottom-0 left-0 w-32 h-32 pointer-events-none z-50 transform scale-y-[-1]">
+        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      </div>
+      <div className="fixed bottom-0 right-0 w-32 h-32 pointer-events-none z-50 transform scale-[-1]">
+        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      </div>
 
     </div>
   );

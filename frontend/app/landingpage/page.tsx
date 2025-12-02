@@ -47,33 +47,58 @@ useEffect(() => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute w-96 h-96 bg-[#df7500]/10 rounded-full blur-3xl animate-pulse"
-          style={{
-            left: mousePosition.x * 0.02 + '%',
-            top: mousePosition.y * 0.02 + '%'
-          }}
-        />
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-[#651321]/10 rounded-full blur-2xl animate-bounce"
-          style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-[#df7500]/10 rounded-full blur-2xl animate-pulse"
-          style={{ animationDuration: '3s' }} />
+    <div className="min-h-screen relative overflow-hidden" style={{
+      background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)'
+    }}>
+      {/* Parchment texture overlay */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`
+      }} />
+
+      {/* Compass rose background */}
+      <div className="absolute top-1/4 right-1/4 w-64 h-64 opacity-10 compass-spin">
+        <img src="/compass-rose.svg" alt="" className="w-full h-full" />
+      </div>
+      <div className="absolute bottom-1/4 left-1/4 w-48 h-48 opacity-10 compass-spin" style={{ animationDuration: '90s', animationDirection: 'reverse' }}>
+        <img src="/compass-rose.svg" alt="" className="w-full h-full" />
       </div>
 
-      {/* Hero Section */}
-      <div className={`relative z-10 max-w-7xl mx-auto px-6 py-20 transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-        <div className="text-center">
-          <h1 className="text-6xl md:text-7xl font-bold text-[#651321] mb-6 leading-tight">
-            Challenge Your
-            <span className="bg-gradient-to-r from-[#df7500] via-[#651321] to-[#df7500] bg-clip-text text-transparent block">
-              Mind
-            </span>
-          </h1>
+      {/* Map grid lines */}
+      <div className="absolute inset-0 map-grid pointer-events-none" />
 
-          <p className="text-xl text-[#651321] mb-12 max-w-2xl mx-auto leading-relaxed">
+      {/* Hero Section */}
+      <div className={`relative z-10 max-w-7xl mx-auto px-6 py-20 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+        <div className="text-center">
+          {/* Decorative header with ancient styling */}
+          <div className="relative inline-block mb-8">
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+            
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 px-12" style={{
+              fontFamily: 'Cinzel, serif',
+              color: '#651321',
+              textShadow: '2px 2px 4px rgba(112, 66, 20, 0.2)',
+              letterSpacing: '0.05em'
+            }}>
+              Challenge Your
+              <span className="block mt-2" style={{
+                background: 'linear-gradient(90deg, #DF7500 0%, #651321 50%, #DF7500 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                Mind
+              </span>
+            </h1>
+            
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
+          </div>
+
+          <p className="text-xl mb-12 max-w-2xl mx-auto leading-relaxed handwritten" style={{
+            color: '#4A3426',
+            fontSize: '1.15rem'
+          }}>
             Dive into an immersive quiz experience where knowledge meets competition.
             Climb the leaderboard, and become the ultimate quiz champion.
           </p>
@@ -82,14 +107,13 @@ useEffect(() => {
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button
               disabled={!published}
-              className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group ancient-button px-8 py-4 rounded-full font-bold text-lg flex items-center gap-3 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                fontSize: '1.1rem',
+                letterSpacing: '0.05em'
+              }}
               onClick={() => {
                 if (!published) return;
-
-                
-                
-                
-                
                 if (sessionStatus === 'authenticated' && session) {
                   router.push('/departments');
                 } else {
@@ -98,17 +122,26 @@ useEffect(() => {
               }}
             >
               <Zap className="w-5 h-5 group-hover:animate-pulse" />
-              {published ? 'Start Quiz' : 'Comming Soon'}
+              {published ? 'Start Quest' : 'Coming Soon'}
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
               disabled={!published}
-              className="group bg-[#df7500]/10 backdrop-blur-sm text-[#651321] px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:bg-[#df7500]/20 transition-all duration-300 transform hover:scale-105 border border-[#df7500]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group px-8 py-4 rounded-full font-bold text-lg flex items-center gap-3 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed relative"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: 'rgba(244, 232, 208, 0.6)',
+                color: '#651321',
+                border: '2px solid #C9A961',
+                fontSize: '1.1rem',
+                letterSpacing: '0.05em',
+                boxShadow: '0 4px 6px rgba(44, 24, 16, 0.15)'
+              }}
               onClick={() => router.push('/leaderboard/top5')}
             >
-              <Trophy className="w-5 h-5 group-hover:animate-bounce text-[#df7500]" />
-              View Leaderboard
+              <Trophy className="w-5 h-5 group-hover:animate-bounce" style={{ color: '#DF7500' }} />
+              View Champions
             </button>
           </div>
         </div>

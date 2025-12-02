@@ -83,9 +83,13 @@ export default function DepartmentsPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gradient-to-br from-[#fff7ed] to-[#ffe4e1] relative"
-      style={{ position: 'relative', overflow: 'hidden' }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative"
+      style={{ 
+        background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)',
+        overflow: 'hidden' 
+      }}
     >
+      {/* Parchment texture */}
       <div
         style={{
           position: 'absolute',
@@ -93,52 +97,35 @@ export default function DepartmentsPage() {
           left: 0,
           width: '100%',
           height: '100%',
-          background: '#FED9DF',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`,
+          opacity: 0.2,
           zIndex: 0,
+          pointerEvents: 'none'
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 1,
-          pointerEvents: 'none',
-          backgroundImage: 'url("/Container.png")',
-          backgroundSize: 'auto',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'top',
-          backgroundAttachment: 'scroll',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(255,255,255,0.6)',
-          zIndex: 1
-        }}
-      />
+      {/* Map grid */}
+      <div className="map-grid" style={{ position: 'absolute', inset: 0, zIndex: 0 }} />
       <div className="w-full max-w-md mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-        <h1 className="text-2xl md:text-3xl font-bold text-[#651321] mb-2 text-center">Quizzes</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-center" style={{
+          fontFamily: 'Cinzel, serif',
+          color: '#651321',
+          letterSpacing: '0.05em',
+          textShadow: '2px 2px 4px rgba(112, 66, 20, 0.2)'
+        }}>Available Quests</h1>
         <div className="text-center mb-6">
-          <div className="text-sm text-[#651321] opacity-90">{(session?.user?.name ?? user?.name) ? `Here we go, ${session?.user?.name ?? user?.name}` : 'Welcome'}</div>
+          <div className="text-sm handwritten" style={{ color: '#4A3426' }}>{(session?.user?.name ?? user?.name) ? `Greetings, ${session?.user?.name ?? user?.name}` : 'Welcome, Scholar'}</div>
         </div>
         <div className="flex flex-col gap-5">
-          {loading && <div className="text-center text-sm text-gray-600">Loading quizzes...</div>}
+          {loading && <div className="text-center text-sm handwritten" style={{ color: '#4A3426' }}>Unveiling quests...</div>}
           {!loading && (!quizSets || quizSets.length === 0) && (
-            <div className="text-center text-sm text-gray-600">No quizzes available.</div>
+            <div className="text-center text-sm handwritten" style={{ color: '#4A3426' }}>No quests available at this time.</div>
           )}
           {quizSets && quizSets.map((q, idx) => (
             <button
               key={q.quizId}
               onClick={() => handlePick(q.quizId)}
-              className={`w-full py-4 rounded-xl shadow-lg font-semibold text-lg ${buttonStyles[idx % buttonStyles.length]} transition-all duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[#df7500]`}
+              className="ancient-button w-full py-4 rounded-xl shadow-lg font-bold text-lg transition-all duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2"
+              style={{ letterSpacing: '0.05em' }}
             >
               {q.name}
             </button>
@@ -146,9 +133,24 @@ export default function DepartmentsPage() {
         </div>
         <button
           onClick={() => router.push('/')}
-          className="mt-8 w-full py-3 rounded-xl bg-white text-[#651321] font-medium shadow hover:bg-[#df7500]/10 transition"
+          className="mt-8 w-full py-3 rounded-xl font-bold shadow transition-all"
+          style={{
+            fontFamily: 'Cinzel, serif',
+            background: 'rgba(244, 232, 208, 0.8)',
+            color: '#651321',
+            border: '2px solid #704214',
+            letterSpacing: '0.03em'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(232, 213, 181, 0.9)';
+            e.currentTarget.style.borderColor = '#C9A961';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(244, 232, 208, 0.8)';
+            e.currentTarget.style.borderColor = '#704214';
+          }}
         >
-          Back to Home
+          Return to Map
         </button>
       </div>
     </div>
