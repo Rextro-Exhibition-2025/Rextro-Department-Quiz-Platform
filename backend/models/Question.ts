@@ -4,20 +4,20 @@ import mongoose, { Schema, Document } from 'mongoose';
 type OptionType = 'A' | 'B' | 'C' | 'D';
 
 interface Option {
-	option: OptionType;
-	optionText?: string;
-	optionImage?: string;
-	optionImagePublicId?: string;
+    option: OptionType;
+    optionText?: string;
+    optionImage?: string;
+    optionImagePublicId?: string;
 }
 
 
 export interface IQuestion extends Document {
     quizid: number;
-	question: string;
-	questionImage?: string;
-	questionImagePublicId?: string;
-	options: Option[];
-	correctOption: OptionType;
+    question: string;
+    questionImage?: string;
+    questionImagePublicId?: string;
+    options: Option[];
+    correctOption: OptionType;
 }
 
 const OptionSchema: Schema = new Schema({
@@ -31,7 +31,7 @@ const OptionSchema: Schema = new Schema({
 // Pre-validation hooks don't execute for subdocuments in arrays
 
 const QuestionSchema: Schema = new Schema({
-        quizId: { type: Number, required: true , enum: [1,2,3,4,5,6,7,8]},
+    quizId: { type: Number, required: true },
     question: { type: String, required: true },
     questionImage: { type: String, required: false },
     questionImagePublicId: { type: String, required: false },
