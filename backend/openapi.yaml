@@ -1,27 +1,32 @@
 openapi: 3.0.3
 info:
   title: Rextro Quiz Platform API
-  description: Backend API for the quiz platform with authentication, quiz management, and violation tracking
+  description: Complete Backend API for Rextro Quiz Platform including Authentication, Quiz Management, Question Bank, Attempts, and Leaderboards.
   version: 1.0.0
   contact:
     email: rmkavindudhananjaya@gmail.com
 
 servers:
   - url: http://localhost:5000/api
-    description: Development server
-  - url: http://localhost:3000/api
-    description: Alternative development server
+    description: Local Development Server
+  - url: https://rextro-maths-quiz-backend.vercel.app/api
+    description: Production Server
 
 tags:
-  - name: Authentication
-    description: User authentication and authorization
+  - name: Auth
+    description: User registration and OAuth linking
   - name: Users
-    description: User management
-  - name: Questions
-    description: Question management
+    description: User management operations
   - name: Quizzes
-    description: Quiz management
-  # Violations removed
+    description: Quiz sets, publishing, and submissions
+  - name: Questions
+    description: CRUD operations for Questions (Admin)
+  - name: Attempts
+    description: Real-time question opening and answering
+  - name: Leaderboard
+    description: aggregated rankings
+  - name: Upload
+    description: Image upload via Cloudinary
 
 components:
   securitySchemes:
@@ -31,111 +36,7 @@ components:
       bearerFormat: JWT
 
   schemas:
-    LoginRequest:
-      type: object
-      required:
-        - name
-        - password
-      properties:
-        name:
-          type: string
-          example: "John Doe"
-        password:
-          type: string
-          example: "secret_password"
-
-    UpdateStateRequest:
-      type: object
-      required:
-        - name
-        - hasEndedQuiz
-      properties:
-        name:
-          type: string
-          example: "John Doe"
-        hasEndedQuiz:
-          type: boolean
-          example: true
-
-
-    Question:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        question:
-          type: string
-          example: "What is the capital of France?"
-        image:
-          type: string
-          nullable: true
-          example: "https://example.com/image.jpg"
-        answers:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                example: "a"
-              text:
-                type: string
-                nullable: true
-                example: "Paris"
-              image:
-                type: string
-                nullable: true
-                example: "https://example.com/answer.jpg"
-        correctAnswer:
-          type: string
-          example: "a"
-
-    Quiz:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        title:
-          type: string
-          example: "General Knowledge Quiz"
-        description:
-          type: string
-          example: "A quiz covering various topics"
-        questions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Question'
-        isActive:
-          type: boolean
-          example: true
-        createdAt:
-          type: string
-          format: date-time
-          example: "2023-10-05T10:00:00Z"
-
-    Violation:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        userId:
-          type: string
-          example: "64f1a2b3c4d5e6f7g8h9i0j1"
-        name:
-          type: string
-          example: "John Doe"
-        violationType:
-          type: string
-          enum: ["copy & paste", "escaping full screen", "tab switching"]
-          example: "copy & paste"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2023-10-05T10:30:00Z"
-
+    # --- Common Schemas ---
     Error:
       type: object
       properties:
@@ -144,360 +45,631 @@ components:
           example: false
         message:
           type: string
-          example: "Error message"
+          example: "Error description"
+        error:
+          type: string
+          description: detailed error message
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    # --- Model Schemas ---
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        studentId:
+          type: string
+        authProvider:
+          type: string
+          enum: ["local", "google"]
+        marks:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    Option:
+      type: object
+      required:
+        - option
+      properties:
+        option:
+          type: string
+          enum: ["A", "B", "C", "D"]
+        optionText:
+          type: string
+        optionImage:
+          type: string
+        optionImagePublicId:
+          type: string
+
+    Question:
+      type: object
+      properties:
+        _id:
+          type: string
+        quizId:
+          type: integer
+        question:
+          type: string
+        questionImage:
+          type: string
+        questionImagePublicId:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/Option"
+        correctOption:
+          type: string
+          enum: ["A", "B", "C", "D"]
+
+    Quiz:
+      type: object
+      properties:
+        _id:
+          type: string
+        quizId:
+          type: integer
+        name:
+          type: string
+        isPublished:
+          type: boolean
+        questions:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - $ref: "#/components/schemas/Question"
+
+    Attempt:
+      type: object
+      properties:
+        _id:
+          type: string
+        student:
+          type: string
+        quizId:
+          type: integer
+        question:
+          type: string
+        openTime:
+          type: string
+          format: date-time
+        submitTime:
+          type: string
+          format: date-time
+        answer:
+          type: string
+        isCorrect:
+          type: boolean
+        timeTaken:
+          type: number
+          description: Time taken in seconds
+
+    # --- Request/Response specific ---
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - studentId
+        - email
+      properties:
+        name:
+          type: string
+        studentId:
+          type: string
+        email:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            authToken:
+              type: string
 
 paths:
-  /auth/login:
+  # ==============================
+  # AUTH ROUTES
+  # ==============================
+  /auth/register:
     post:
       tags:
-        - Authentication
-      summary: User login
-      description: Authenticate a team member with credentials
+        - Auth
+      summary: Register a new user
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/RegisterRequest"
       responses:
-        '200':
-          description: Login successful
+        "201":
+          description: User registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '400':
-          description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: User already exists
 
-  /auth/update-state:
-    put:
-      tags:
-        - Authentication
-      summary: Update user quiz state
-      description: Update whether a user has started or ended the quiz
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateStateRequest'
-      responses:
-        '200':
-          description: State updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Quiz state updated successfully"
-                  data:
-                    type: object
-                    properties:
-                        name:
-                          type: string
-                          example: "John Doe"
-                        hasEndedQuiz:
-                          type: boolean
-                          example: true
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-
-  /quizzes/{id}:
-    get:
-      tags:
-        - Quizzes
-      summary: Get quiz by ID
-      description: Retrieve a specific quiz with its questions
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Quiz ID
-          example: "1"
-      responses:
-        '200':
-          description: Successfully retrieved quiz
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  quiz:
-                    $ref: '#/components/schemas/Quiz'
-        '404':
-          description: Quiz not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /questions:
-    get:
-      tags:
-        - Questions
-      summary: Get all questions
-      description: Retrieve all questions (admin only)
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Successfully retrieved questions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Question'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+  /auth/oauth/link:
     post:
       tags:
-        - Questions
-      summary: Create a new question
-      description: Create a new quiz question (admin only)
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Question'
-      responses:
-        '201':
-          description: Question created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Question'
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /violations:
-    post:
-      tags:
-        - Violations
-      summary: Report a violation
-      description: Report a quiz violation (copy/paste, tab switching, etc.)
-      security:
-        - BearerAuth: []
+        - Auth
+      summary: Link Google Account
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - userId
-                - memberName
-                - violationType
+              required: [email, googleId]
               properties:
-                userId:
+                email:
                   type: string
-                  example: "64f1a2b3c4d5e6f7g8h9i0j1"
-                memberName:
+                googleId:
                   type: string
-                  example: "John Doe"
-                violationType:
+                name:
                   type: string
-                  enum: ["copy & paste", "escaping full screen", "tab switching"]
-                  example: "copy & paste"
       responses:
-        '201':
-          description: Violation reported successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Violation'
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        "200":
+          description: Account linked, cookie set
+        "404":
+          description: User not found
 
+  /auth/me:
     get:
       tags:
-        - Violations
-      summary: Get all violations
-      description: Retrieve all reported violations (admin only)
+        - Auth
+      summary: Get current logged in user details
       security:
         - BearerAuth: []
-      parameters:
-        - name: userId
-          in: query
-          schema:
-            type: string
-          description: Filter by user ID
-        - name: violationType
-          in: query
-          schema:
-            type: string
-            enum: ["copy & paste", "escaping full screen", "tab switching"]
-          description: Filter by violation type
       responses:
-        '200':
-          description: Successfully retrieved violations
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Violation'
-        '401':
+        "200":
+          description: User details
+        "401":
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /violations/count:
-    get:
-      tags:
-        - Violations
-      summary: Count violations for a team member
-      description: Get the count of violations for a specific team member
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: userId
-          in: query
-          required: true
-          schema:
-            type: string
-          description: User ID
-        - name: memberName
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Member name
-      responses:
-        '200':
-          description: Successfully retrieved violation count
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  count:
-                    type: integer
-                    example: 5
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
+  # ==============================
+  # USER ROUTES
+  # ==============================
   /users:
     get:
       tags:
         - Users
       summary: Get all users
-      description: Retrieve all users (admin only)
+      responses:
+        "200":
+          description: List of users
+    post:
+      tags:
+        - Users
+      summary: Create a user manually
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: User created
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: User details
+    put:
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: User updated
+    delete:
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: User deleted
+
+  # ==============================
+  # QUIZ ROUTES
+  # ==============================
+  /quizzes/get-quiz-sets:
+    get:
+      tags:
+        - Quizzes
+      summary: Get list of available quiz sets
+      responses:
+        "200":
+          description: List of quizzes (ID and Name only)
+
+  /quizzes/create-quiz-set:
+    post:
+      tags:
+        - Quizzes
+      summary: Create a new quiz set (Admin)
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quizId: { type: integer }
+                name: { type: string }
+                isPublished: { type: boolean }
+      responses:
+        "201":
+          description: Quiz created
+
+  /quizzes/{quizId}:
+    get:
+      tags:
+        - Quizzes
+      summary: Get specific quiz with questions
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Quiz details with questions populated
+    patch:
+      tags:
+        - Quizzes
+      summary: Update quiz set details (e.g. name)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        "200":
+          description: Updated
+
+  /quizzes/submit-quiz:
+    post:
+      tags:
+        - Quizzes
+      summary: Submit full quiz to calculate score
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quizId, submittedAnswers]
+              properties:
+                quizId: { type: integer }
+                submittedAnswers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      questionId: { type: integer }
+                      answer: { type: string }
+      responses:
+        "200":
+          description: Score calculated and user marks updated
+
+  /quizzes/check-quiz-published-status:
+    get:
+      tags:
+        - Quizzes
+      summary: Check if Quiz ID 1 is published
+      responses:
+        "200":
+          description: Status returned
+
+  /quizzes/publish-all-quizzes:
+    post:
+      tags:
+        - Quizzes
+      summary: Set all quizzes to published (Admin)
       security:
         - BearerAuth: []
       responses:
-        '200':
-          description: Successfully retrieved users
+        "200":
+          description: Success
+
+  /quizzes/unpublish-all-quizzes:
+    post:
+      tags:
+        - Quizzes
+      summary: Set all quizzes to unpublished (Admin)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Success
+
+  /quizzes/get-leaderboard:
+    get:
+      tags:
+        - Quizzes
+      summary: Get global leaderboard based on user marks
+      responses:
+        "200":
+          description: Top 50 users
+
+  # ==============================
+  # QUESTION ROUTES
+  # ==============================
+  /questions:
+    get:
+      tags:
+        - Questions
+      summary: Get all questions (Admin)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of all questions
+    post:
+      tags:
+        - Questions
+      summary: Create a new question (Admin)
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Question"
+      responses:
+        "201":
+          description: Question created
+
+  /questions/{questionId}:
+    get:
+      tags:
+        - Questions
+      summary: Get question by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Question data
+    put:
+      tags:
+        - Questions
+      summary: Edit question (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Question"
+      responses:
+        "200":
+          description: Updated
+    delete:
+      tags:
+        - Questions
+      summary: Delete question (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+
+  # ==============================
+  # ATTEMPT ROUTES
+  # ==============================
+  /attempts/open:
+    post:
+      tags:
+        - Attempts
+      summary: Open/Start an attempt for a question
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quizId, questionId]
+              properties:
+                quizId: { type: integer }
+                questionId: { type: string }
+      responses:
+        "200":
+          description: Attempt retrieved or created
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      type: object
-        '401':
-          description: Unauthorized
+                  success: { type: boolean }
+                  data: { $ref: "#/components/schemas/Attempt" }
+
+  /attempts/submit:
+    post:
+      tags:
+        - Attempts
+      summary: Submit an answer for a question
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quizId, questionId, answer]
+              properties:
+                quizId: { type: integer }
+                questionId: { type: string }
+                answer: { type: string }
+      responses:
+        "200":
+          description: Answer submitted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  isCorrect: { type: boolean }
+                  data: { $ref: "#/components/schemas/Attempt" }
+
+  /attempts/quiz/{quizId}:
+    get:
+      tags:
+        - Attempts
+      summary: Get all attempts for a specific quiz by the current user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of attempts
+
+  # ==============================
+  # LEADERBOARD ROUTES
+  # ==============================
+  /leaderboard:
+    get:
+      tags:
+        - Leaderboard
+      summary: Get comprehensive leaderboard with stats
+      parameters:
+        - name: quizId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Leaderboard data with completion times and accuracy
+
+  # ==============================
+  # UPLOAD ROUTES
+  # ==============================
+  /upload/upload:
+    post:
+      tags:
+        - Upload
+      summary: Upload image to Cloudinary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  description: Base64 string
+                folder:
+                  type: string
+      responses:
+        "200":
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      url: { type: string }
+                      publicId: { type: string }
+
+  /upload/delete:
+    delete:
+      tags:
+        - Upload
+      summary: Delete image from Cloudinary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicId]
+              properties:
+                publicId: { type: string }
+      responses:
+        "200":
+          description: Image deleted
