@@ -4,19 +4,19 @@
 
 :root {
   /* Parchment and Ink Colors */
-  --parchment: #f4e8d0;
-  --parchment-light: #fff8e7;
-  --parchment-dark: #e8d5b5;
-  --ink-dark: #2c1810;
-  --ink-medium: #4a3426;
-  --sepia: #704214;
-  --gold: #c9a961;
-  --burnt-orange: #df7500;
-  --deep-brown: #651321;
-  --aged-paper: #f5edd6;
+  --parchment: #e3d5b8;
+  --parchment-light: #fdf6e3;
+  --parchment-dark: #d4c5a3;
+  --ink-dark: #2a1a11;
+  --ink-medium: #5c4033;
+  --sepia: #8b5a2b;
+  --gold: #d4af37;
+  --burnt-orange: #c04000;
+  --deep-brown: #4a2511;
+  --aged-paper: #e6dcc3;
 
   /* Modern fallbacks */
-  --background: var(--parchment-light);
+  --background: var(--parchment);
   --foreground: var(--ink-dark);
 }
 

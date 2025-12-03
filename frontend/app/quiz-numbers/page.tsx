@@ -8,24 +8,81 @@ import { useSearchParams } from "next/navigation";
 export default function QuizNumbersPage() {
   const searchParams = useSearchParams();
   const quizId = searchParams.get("quizId") || "1";
+  const [questionCount, setQuestionCount] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for quiz numbers (10 questions)
-  const questions = Array.from({ length: 10 }, (_, i) => i + 1);
+  // Fetch quiz data to get the number of questions
+  useEffect(() => {
+    const fetchQuizData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch quiz data: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.quiz && data.quiz.questions) {
+          setQuestionCount(data.quiz.questions.length);
+        } else {
+          throw new Error("Invalid quiz data format");
+        }
+      } catch (err) {
+        console.error("Error fetching quiz:", err);
+        setError(err instanceof Error ? err.message : "Failed to load quiz");
+        setQuestionCount(10); // Fallback to 10 questions
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Path coordinates for a winding road (percentage based for responsiveness)
-  // These points will be used to draw the SVG path and position markers
-  const pathPoints = [
-    { x: 10, y: 80 },
-    { x: 25, y: 65 },
-    { x: 15, y: 45 },
-    { x: 35, y: 30 },
-    { x: 55, y: 40 },
-    { x: 70, y: 25 },
-    { x: 85, y: 45 },
-    { x: 75, y: 65 },
-    { x: 90, y: 80 },
-    { x: 95, y: 60 }, // Extra point for path end
-  ];
+    fetchQuizData();
+  }, [quizId]);
+
+  // Generate dynamic questions array based on fetched count
+  const questions = Array.from({ length: questionCount }, (_, i) => i + 1);
+
+  // Generate dynamic path points based on the number of questions
+  const generatePathPoints = (count: number) => {
+    const points = [];
+    const sections = Math.ceil(count / 2); // Divide into sections for winding pattern
+    
+    for (let i = 0; i < count; i++) {
+      const progress = i / (count - 1 || 1); // 0 to 1
+      const section = Math.floor(i / 2);
+      
+      // Create a winding pattern that adjusts to question count
+      let x, y;
+      
+      if (i % 4 === 0) {
+        x = 10 + (progress * 20);
+        y = 80 - (progress * 20);
+      } else if (i % 4 === 1) {
+        x = 30 + (progress * 20);
+        y = 60 - (progress * 10);
+      } else if (i % 4 === 2) {
+        x = 50 + (progress * 20);
+        y = 50 - (progress * 15);
+      } else {
+        x = 70 + (progress * 20);
+        y = 40 + (progress * 10);
+      }
+      
+      // Add some variation based on position
+      x = Math.min(95, Math.max(5, x + (i % 3 - 1) * 5));
+      y = Math.min(90, Math.max(10, y + (i % 2) * 10));
+      
+      points.push({ x, y });
+    }
+    
+    return points;
+  };
+
+  const pathPoints = generatePathPoints(questionCount);
 
   // Generate SVG path string
   // Using cubic bezier curves for smooth winding road
@@ -60,6 +117,32 @@ export default function QuizNumbersPage() {
 
       {/* Vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(44,24,16,0.4)_100%)] pointer-events-none z-10"></div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 bg-[var(--parchment)] bg-opacity-90">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[var(--sepia)] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-xl font-bold text-[var(--ink-dark)]">Loading Quest Map...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 bg-[var(--parchment)] bg-opacity-95">
+          <div className="text-center max-w-md px-6">
+            <h2 className="text-2xl font-bold text-red-700 mb-4">Quest Map Unavailable</h2>
+            <p className="text-[var(--ink-dark)] mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-[var(--deep-brown)] text-[var(--parchment-light)] font-bold rounded border-2 border-[var(--sepia)] hover:bg-[var(--sepia)] transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header Banner */}
       <header className="relative z-20 pt-4 md:pt-8 pb-2 md:pb-4 text-center">
@@ -101,12 +184,9 @@ export default function QuizNumbersPage() {
         </svg>
 
         {/* Markers */}
-        {questions.map((q, index) => {
-          // We need to interpolate positions along the curve for better placement if points don't match exactly 1:1 with questions
-          // For simplicity in this mockup, we'll map questions directly to points or interpolate slightly if needed.
-          // Let's just use the defined points for the first few, and maybe add more points if needed.
-          // Actually, let's just place them at the points we defined.
-          const point = pathPoints[index % pathPoints.length];
+        {!loading && !error && questions.map((q, index) => {
+          // Use the dynamically generated path points
+          const point = pathPoints[index] || pathPoints[pathPoints.length - 1];
 
           // Randomize slight offset for "hand-drawn" feel
           const randomRotate = (index * 13) % 20 - 10;
