@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createStudentApi } from "@/interceptors/student";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/contexts/UserContext";
+import AncientLoader from "@/components/AncientLoader";
 
 interface QuizSet {
   quizId: number;
@@ -69,12 +70,8 @@ export default function DepartmentsPage() {
     };
   }, [status, router]);
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-sm text-gray-600">Checking session...</div>
-      </div>
-    );
+  if (!mounted || String(status) === "loading") {
+    return <AncientLoader fullScreen={true} text="Identifying Scholar..." />;
   }
   if (String(status) !== "authenticated") {
     return null;
@@ -140,24 +137,20 @@ export default function DepartmentsPage() {
           </div>
         </div>
         <div className="flex flex-col gap-5">
-          {loading && (
-            <div
-              className="text-center text-sm handwritten"
-              style={{ color: "#4A3426" }}
-            >
-              Unveiling quests...
+          {/* 2. Replace the "Unveiling quests..." text block with the loader [cite: 577] */}
+          {loading ? (
+            <div className="py-10">
+              <AncientLoader fullScreen={false} text="Unveiling Quests..." />
             </div>
-          )}
-          {!loading && (!quizSets || quizSets.length === 0) && (
+          ) : !quizSets || quizSets.length === 0 ? (
+            // ... existing "No quests" code
             <div
               className="text-center text-sm handwritten"
               style={{ color: "#4A3426" }}
             >
               No quests available at this time.
             </div>
-          )}
-
-          {quizSets &&
+          ) : (
             quizSets.map((q, idx) => (
               <button
                 key={q.quizId}
@@ -167,7 +160,8 @@ export default function DepartmentsPage() {
               >
                 {q.name}
               </button>
-            ))}
+            ))
+          )}
         </div>
         <button
           onClick={() => router.push("/")}
