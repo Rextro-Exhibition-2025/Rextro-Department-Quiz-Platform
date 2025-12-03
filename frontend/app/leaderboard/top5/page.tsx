@@ -28,14 +28,14 @@ const Top5PerQuiz: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const safeFetchJson = async (url: string) => {
           const res = await fetch(url);
           const contentType = res.headers.get('content-type') || '';
           const text = await res.text();
 
           if (!res.ok) {
-            
+
             const preview = text?.slice(0, 500);
             throw new Error(`Request to ${url} failed: ${res.status} ${res.statusText} - ${preview}`);
           }
@@ -52,12 +52,12 @@ const Top5PerQuiz: React.FC = () => {
           }
         };
 
-        
+
         const qsJson = await safeFetchJson('http://localhost:5000/api/quizzes/get-quiz-sets');
         const sets: QuizSet[] = Array.isArray(qsJson.data) ? qsJson.data : [];
         setQuizzes(sets);
 
-        
+
         const requests = sets.map((s) =>
           safeFetchJson(`http://localhost:5000/api/leaderboard?quizId=${s.quizId}&limit=5`).then((j) => ({ id: s.quizId, items: Array.isArray(j.data) ? j.data : [] }))
         );
@@ -90,11 +90,37 @@ const Top5PerQuiz: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fff7ed] to-[#ffe4e1] p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen p-6 relative overflow-hidden">
+      {/* Main Parchment Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url("/parchment-bg.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'sepia(0.3) contrast(1.1) brightness(0.9)'
+        }}
+      />
+
+      {/* Vignette Overlay for depth */}
+      <div className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at center, transparent 0%, rgba(42, 26, 17, 0.4) 100%)'
+        }}
+      />
+
+      {/* Map Grid Overlay */}
+      <div className="absolute inset-0 z-0 map-grid pointer-events-none opacity-20" />
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold" style={{ color: '#651321' }}>Leaderboard</h1>
-          <p className="text-gray-600">Top 1–5 ranks for each department.</p>
+          <h1 className="text-4xl font-bold mb-2" style={{
+            fontFamily: 'Cinzel, serif',
+            color: '#651321',
+            letterSpacing: '0.05em',
+            textShadow: '2px 2px 4px rgba(112, 66, 20, 0.2)'
+          }}>Hall of Champions</h1>
+          <p className="handwritten" style={{ color: '#4A3426', fontSize: '1.1rem' }}>The most distinguished scholars of each quest.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -102,23 +128,38 @@ const Top5PerQuiz: React.FC = () => {
             <Link
               key={quiz.quizId}
               href={`/leaderboard/departmentLeaderboard?quizId=${quiz.quizId}`}
-              className="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+              className="block parchment-card rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all cursor-pointer relative transform hover:scale-[1.02]"
               aria-label={`View leaderboard details for ${quiz.name ?? `Quiz ${quiz.quizId}`}`}
             >
-              <div className="p-4 border-b" style={{ backgroundColor: '#651321' }}>
-                <h2 className="text-lg font-semibold text-white">{quiz.name ?? `Quiz ${quiz.quizId}`}</h2>
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+              <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+              <div className="p-4 border-b-2" style={{
+                background: 'linear-gradient(180deg, #651321 0%, #704214 100%)',
+                borderColor: '#704214'
+              }}>
+                <h2 className="text-lg font-bold" style={{
+                  fontFamily: 'Cinzel, serif',
+                  color: '#F4E8D0',
+                  letterSpacing: '0.05em'
+                }}>{quiz.name ?? `Quest ${quiz.quizId}`}</h2>
               </div>
 
               <div className="p-4">
                 {(!data[quiz.quizId] || data[quiz.quizId].length === 0) && (
-                  <div className="text-sm text-gray-500">No participants yet</div>
+                  <div className="text-sm handwritten" style={{ color: '#4A3426' }}>No champions yet</div>
                 )}
 
                 <div className="space-y-3">
                   {data[quiz.quizId]?.map((item, idx) => (
-                    <div key={String(item.studentId) + idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div key={String(item.studentId) + idx} className="flex items-center justify-between p-3 rounded-lg transition-all hover:shadow-sm" style={{
+                      background: 'rgba(255, 248, 231, 0.5)',
+                      border: '1px solid #C9A961'
+                    }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-sm">
+                        <div className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm" style={{
+                          background: 'linear-gradient(135deg, #F4E8D0 0%, #E8D5B5 100%)',
+                          border: '2px solid #704214'
+                        }}>
                           {idx === 0 ? (
                             <img src="/Rank_1.png" alt="1st" className="w-8 h-8" />
                           ) : idx === 1 ? (
@@ -126,17 +167,24 @@ const Top5PerQuiz: React.FC = () => {
                           ) : idx === 2 ? (
                             <img src="/Rank_3.png" alt="3rd" className="w-8 h-8" />
                           ) : (
-                            <span className="font-bold text-sm text-gray-700">#{idx + 1}</span>
+                            <span className="font-bold text-sm" style={{ color: '#651321', fontFamily: 'Cinzel, serif' }}>#{idx + 1}</span>
                           )}
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-800 leading-tight max-w-[12rem] truncate">{item.name ?? String(item.studentId)}</div>
+                          <div className="font-bold leading-tight max-w-[12rem] truncate" style={{
+                            color: '#2C1810',
+                            fontFamily: 'Crimson Text, serif',
+                            fontSize: '1rem'
+                          }}>{item.name ?? String(item.studentId)}</div>
                           {/* <div className="text-xs text-gray-500">Correct : {item.correctCount ?? '-'}</div> */}
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <div className="text-l font-bold" style={{ color: '#df7500' }}>
+                        <div className="text-lg font-bold" style={{
+                          color: '#DF7500',
+                          fontFamily: 'Cinzel, serif'
+                        }}>
                           {item.correctPercentage != null ? formatPercent(item.correctPercentage) : (item.correctCount != null ? String(item.correctCount) : '-')}
                         </div>
                         {/* <div className="text-xs text-gray-500">time: {item.totalTimeTaken ?? '-'}</div> */}

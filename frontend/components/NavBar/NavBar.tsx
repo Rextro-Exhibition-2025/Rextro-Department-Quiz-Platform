@@ -29,7 +29,16 @@ const NavBar = () => {
   }, []);
 
   return (
-    <nav className="w-full border-b border-gray-200 bg-white">
+    <nav className="w-full border-b-2 relative" style={{ 
+      background: 'linear-gradient(180deg, #F4E8D0 0%, #E8D5B5 100%)',
+      borderColor: '#704214',
+      boxShadow: '0 4px 6px rgba(44, 24, 16, 0.15)'
+    }}>
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-1 opacity-30" style={{
+        background: 'repeating-linear-gradient(90deg, #704214 0px, #704214 10px, transparent 10px, transparent 20px)'
+      }} />
+      
       <div className="flex items-center justify-between px-4 md:px-8 py-2">
         {/* Logo Section */}
         <div className="flex items-center gap-2 md:gap-4">
@@ -39,16 +48,19 @@ const NavBar = () => {
             width={80}
             height={40}
             className="md:w-[120px] md:h-[60px]"
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", filter: 'sepia(0.3) contrast(1.1)' }}
           />
           <div className="flex flex-col leading-tight">
-            <span className="text-[10px] md:text-xs text-[#a67c52] font-semibold">
+            <span className="text-[10px] md:text-xs font-semibold handwritten" style={{ color: '#C9A961' }}>
               25 Years of Innovation & Excellence
             </span>
-            <span className="text-sm md:text-lg font-semibold text-[#4b2e83]">
+            <span className="text-sm md:text-lg font-bold" style={{ 
+              fontFamily: 'Cinzel, serif',
+              color: '#651321'
+            }}>
               Faculty of Engineering
             </span>
-            <span className="text-xs md:text-sm text-[#4b2e83]">University of Ruhuna</span>
+            <span className="text-xs md:text-sm" style={{ color: '#4A3426' }}>University of Ruhuna</span>
           </div>
         </div>
 
@@ -66,10 +78,27 @@ const NavBar = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`font-semibold ${pathname === link.href
-                  ? "text-[#4b2e83] border-b-2 border-[#4b2e83]"
-                  : "text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent"
-                  } pb-1 transition-colors`}
+                className={`font-bold pb-1 transition-colors ${pathname === link.href
+                  ? "border-b-2"
+                  : "border-b-2 border-transparent"
+                  }`}
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '0.95rem',
+                  letterSpacing: '0.03em',
+                  color: pathname === link.href ? '#651321' : '#4A3426',
+                  borderColor: pathname === link.href ? '#C9A961' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (pathname !== link.href) {
+                    e.currentTarget.style.color = '#DF7500';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (pathname !== link.href) {
+                    e.currentTarget.style.color = '#4A3426';
+                  }
+                }}
               >
                 {link.label}
               </Link>
@@ -80,7 +109,24 @@ const NavBar = () => {
             {mounted && status === 'authenticated' ? (
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="ml-2 px-3 py-1 rounded-lg font-semibold bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:bg-gray-50 transition-colors"
+                className="ml-2 px-4 py-2 rounded font-bold transition-all"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  background: 'linear-gradient(180deg, #651321 0%, #704214 100%)',
+                  color: '#F4E8D0',
+                  border: '2px solid #704214',
+                  boxShadow: '0 2px 4px rgba(44, 24, 16, 0.3)',
+                  fontSize: '0.85rem',
+                  letterSpacing: '0.05em'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #DF7500 0%, #651321 100%)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #651321 0%, #704214 100%)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
                 Logout
               </button>
@@ -91,8 +137,11 @@ const NavBar = () => {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-gray-700 hover:text-[#4b2e83] transition-colors"
+          className="lg:hidden p-2 transition-colors"
           aria-label="Toggle menu"
+          style={{ color: '#651321' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#DF7500'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#651321'}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -100,7 +149,10 @@ const NavBar = () => {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 bg-white">
+        <div className="lg:hidden border-t-2" style={{ 
+          borderColor: '#704214',
+          background: 'linear-gradient(180deg, #E8D5B5 0%, #F4E8D0 100%)'
+        }}>
           <div className="flex flex-col p-4 gap-4">
             {navLinks.map((link) => {
               if (link.label === "Admin Portal") {
@@ -115,10 +167,15 @@ const NavBar = () => {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`font-semibold py-2 ${pathname === link.href
-                    ? "text-[#4b2e83] border-l-4 border-[#4b2e83] pl-3"
-                    : "text-gray-700 hover:text-[#a67c52] pl-3"
-                    } transition-colors`}
+                  className={`font-bold py-2 pl-3 transition-colors ${pathname === link.href
+                    ? "border-l-4"
+                    : ""
+                    }`}
+                  style={{
+                    fontFamily: 'Cinzel, serif',
+                    color: pathname === link.href ? '#651321' : '#4A3426',
+                    borderColor: pathname === link.href ? '#C9A961' : 'transparent'
+                  }}
                 >
                   {link.label}
                 </Link>
@@ -129,7 +186,14 @@ const NavBar = () => {
               {mounted && status === 'authenticated' ? (
                 <button
                   onClick={() => { setMobileMenuOpen(false); signOut({ callbackUrl: '/' }) }}
-                  className="w-full text-left px-4 py-2 rounded bg-white text-[#651321] border border-[#dfd7d0] font-semibold"
+                  className="w-full text-left px-4 py-2 rounded font-bold transition-all"
+                  style={{
+                    fontFamily: 'Cinzel, serif',
+                    background: 'linear-gradient(180deg, #651321 0%, #704214 100%)',
+                    color: '#F4E8D0',
+                    border: '2px solid #704214',
+                    letterSpacing: '0.05em'
+                  }}
                 >
                   Logout
                 </button>

@@ -1,279 +1,276 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createStudentApi } from '@/interceptors/student';
-import NavBar from '@/components/NavBar/NavBar';
-import Footer from '@/components/Footer/Footer';
-import type { Number } from './quizNumbers';
+import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation"; // Added useRouter
+import { ArrowLeft } from "lucide-react"; // Importing an icon for the back button
 
 export default function QuizNumbersPage() {
-  const router = useRouter();
+  const router = useRouter(); // Initialize router
   const searchParams = useSearchParams();
-  const quizIdParam = searchParams.get('quizId');
-  const quizId = quizIdParam ? Number(quizIdParam) : null;
+  const quizId = searchParams.get("quizId") || "1";
 
-  const [numbers, setNumbers] = useState<Number[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [attemptLoadingId, setAttemptLoadingId] = useState<number | null>(null);
-  const [title, setTitle] = useState<string>('Quiz');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { data: session, status } = useSession();
+  const [questionCount, setQuestionCount] = useState<number>(0);
+  const [quizName, setQuizName] = useState<string>(""); // State for Quiz Name
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // --- Configuration ---
+  const ITEM_SPACING_X = 200;
+  const MAP_HEIGHT = 600;
+  const PADDING_X = 200;
 
   useEffect(() => {
-    let mounted = true;
-    if (status === 'loading') return;
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    (async () => {
-      if (!quizId || Number.isNaN(quizId)) {
-        if (quizIdParam && Number.isNaN(Number(quizIdParam))) {
-          setErrorMessage('Invalid quizId provided in URL.');
-        }
-  
-        if (mounted) {
-          setNumbers(Array.from({ length: 40 }, (_, i) => ({ id: i + 1, label: String(i + 1), taken: false })));
-          setLoading(false);
-        }
-        return;
-      }
-
+    const fetchQuizData = async () => {
       try {
-        const api = await createStudentApi();
-        const url = `/quizzes/${quizId}`;
-        console.log('Fetching quiz from', url);
-        const resp = await api.get(url);
-        const body: any = resp?.data ?? {};
-        const quiz = body?.quiz;
-        const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
-        const total = questions.length || 40;
-  
-        const generated: Number[] = Array.from({ length: total }, (_, i) => {
-          const q = questions[i];
-          return {
-            id: i + 1,
-            label: String(i + 1),
-            taken: false,
-            questionId: q?._id ?? undefined,
-          } as Number;
-        });
-        if (mounted) {
-    
-          const init = generated.map((g) => ({ ...g, submitted: false }));
-          setNumbers(init);
-          setTitle(quiz?.name ?? `Quiz ${quizId}`);
-          setErrorMessage(null);
+        setLoading(true);
+        setError(null);
+        const apiUrl =
+          process.env.NEXT_PUBLIC_SERVER_API_URL || "http://localhost:5000/api";
+        const response = await fetch(`${apiUrl}/quizzes/${quizId}`);
 
-    
-          try {
-            const attemptsResp: any = await api.get(`/attempts/quiz/${quizId}`);
-            const attempts: any[] = attemptsResp?.data?.data ?? [];
+        if (!response.ok) throw new Error(`Failed to fetch quiz data`);
 
-            
-            const stateMap = new Map<string, { opened: boolean; submitted: boolean }>();
-            for (const a of attempts) {
-              const qid = a?.question ? String(a.question) : null;
-              if (!qid) continue;
-              const existing = stateMap.get(qid) ?? { opened: false, submitted: false };
+        const data = await response.json();
 
-              
-              if (a?.submitTime) {
-                existing.submitted = true;
-                existing.opened = true;
-              } else if (a?.openTime) {
-                
-                existing.opened = true;
-              }
+        // Handle data structure variations
+        const qList = data.quiz?.questions || data.data?.questions || [];
+        // Fetch name with fallback
+        const qName = data.quiz?.name || data.data?.name || "Unknown Quest";
 
-              stateMap.set(qid, existing);
-            }
+        setQuizName(qName);
 
-            if (stateMap.size > 0) {
-              setNumbers((prev) => prev.map((n) => {
-                const qid = n.questionId ? String(n.questionId) : null;
-                const s = qid ? stateMap.get(qid) : undefined;
-                return {
-                  ...n,
-                  taken: !!n.taken || !!s?.opened || !!s?.submitted,
-                  submitted: !!s?.submitted || !!n.submitted,
-                };
-              }));
-            }
-          } catch (e) {
-            console.warn('Could not fetch attempts for quiz:', e);
-          }
+        if (Array.isArray(qList)) {
+          setQuestionCount(qList.length);
+        } else {
+          setQuestionCount(10);
         }
-      } catch (err: any) {
-  
-        console.error('Error fetching quiz questions:', err);
-        let friendly = 'Failed to fetch quiz.';
-        if (err?.response) {
-          const status = err.response.status;
-          const data = err.response.data;
-          if (status === 404) {
-            friendly = data?.message || `Quiz with id ${quizId} not found.`;
-          } else if (data?.message) {
-            friendly = data.message;
-          } else {
-            friendly = `Server returned ${status}`;
-          }
-        } else if (err?.message) {
-          friendly = err.message;
-        }
-
-        if (mounted) {
-          setErrorMessage(friendly);
-          setNumbers(Array.from({ length: 40 }, (_, i) => ({ id: i + 1, label: String(i + 1), taken: false })));
-        }
+      } catch (err) {
+        console.error("Error fetching quiz:", err);
+        setQuestionCount(10);
+        setQuizName("Mysterious Quest");
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
-    })();
-
-    return () => { mounted = false };
-  }, [quizId, status, router]);
-
-  const handleNumberClick = (id: number) => {
-    if (status === 'loading') {
-      return;
-    }
-
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (!quizId) {
-      router.push('/login');
-      return;
-    }
-
-    const selected = numbers.find((n) => n.id === id);
-    const questionId = selected?.questionId;
-
-    const navigateToQuestion = () => {
-      const questionIndex = id - 1;
-      router.push(`/quiz?quizId=${encodeURIComponent(String(quizId))}&q=${encodeURIComponent(String(questionIndex))}`);
     };
+    fetchQuizData();
+  }, [quizId]);
 
-    if (!questionId) {
-      setNumbers((prevNumbers) =>
-        prevNumbers.map((number) =>
-          number.id === id ? { ...number, taken: true } : number
-        )
-      );
-      navigateToQuestion();
-      return;
+  const questions = Array.from({ length: questionCount }, (_, i) => i + 1);
+
+  // --- Coordinate Logic ---
+  const generatePathPoints = (count: number) => {
+    const points = [];
+    const Y_CENTER = MAP_HEIGHT / 2;
+    const Y_AMPLITUDE = 150;
+
+    for (let i = 0; i < count; i++) {
+      const x = PADDING_X + i * ITEM_SPACING_X;
+      const wave = Math.sin(i * 0.8) * Y_AMPLITUDE;
+      const randomness = (i % 2 === 0 ? 20 : -20) + ((i * 13) % 40);
+      const y = Y_CENTER + wave + randomness * 0.5;
+      points.push({ x, y });
     }
+    return points;
+  };
 
-    (async () => {
-      setAttemptLoadingId(id);
-      try {
-        const api = await createStudentApi();
-        const resp = await api.post('/attempts/open', { quizId, questionId });
-  
-        if ((resp?.data as any)?.success) {
-          setNumbers((prevNumbers) =>
-            prevNumbers.map((number) =>
-              number.id === id ? { ...number, taken: true } : number
-            )
-          );
-        }
-        navigateToQuestion();
-      } catch (err: any) {
-        console.error('Failed to open attempt:', err);
-        let friendly = 'Failed to open attempt.';
-        if (err?.response) {
-          const status = err.response.status;
-          const data = err.response.data;
-          if (data?.message) friendly = data.message;
-          else friendly = `Server returned ${status}`;
-        } else if (err?.message) {
-          friendly = err.message;
-        }
-        setErrorMessage(friendly);
-  
-        navigateToQuestion();
-      } finally {
-        setAttemptLoadingId(null);
-      }
-    })();
+  const pathPoints = generatePathPoints(questionCount);
+  const totalMapWidth =
+    pathPoints.length > 0
+      ? pathPoints[pathPoints.length - 1].x + PADDING_X
+      : "100%";
+
+  const generatePath = () => {
+    if (pathPoints.length < 2) return "";
+    let d = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+    for (let i = 0; i < pathPoints.length - 1; i++) {
+      const p1 = pathPoints[i];
+      const p2 = pathPoints[i + 1];
+      const cp1x = p1.x + ITEM_SPACING_X * 0.5;
+      const cp1y = p1.y;
+      const cp2x = p2.x - ITEM_SPACING_X * 0.5;
+      const cp2y = p2.y;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white">
-      <NavBar />
-      <div className="w-full max-w-4xl mt-6 flex-1">
-        <div className="mb-6 flex justify-center">
-          <img
-            src="/9e244c43-ac14-4148-8ed1-d71b4a3d6c8f.png"
-            alt="reference"
-            className="hidden"
-          />
-        </div>
+    <div className="h-screen w-full relative bg-[var(--parchment-light)] overflow-hidden flex flex-col">
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 12px;
+          width: 12px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(44, 24, 16, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #8b5a2b;
+          border-radius: 6px;
+          border: 2px solid #fdf6e3;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #651321;
+        }
+      `}</style>
 
-        <h1 className="text-center text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl md:text-3xl">
-          {title}
-        </h1>
-        <br />
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[url('/parchment-bg.png')] bg-cover bg-center opacity-50 pointer-events-none z-0"></div>
+      <div className="absolute inset-0 map-grid pointer-events-none z-0"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(44,24,16,0.3)_100%)] pointer-events-none z-10"></div>
 
-        <div className="mt-6 flex justify-center">
-          <div className="w-full px-2 sm:px-6 md:px-12">
-            {loading ? (
-              <div className="text-center text-sm text-gray-600">Loading...</div>
-            ) : (
-              <div className="grid grid-cols-5 gap-3 sm:grid-cols-5 md:grid-cols-10 md:gap-4 lg:gap-5">
-                {numbers.map((number) => {
-                  const isSubmitted = !!number.submitted;
-                  const isTakenOpen = !!number.taken && !isSubmitted;
+      {/* Navigation & Header Container */}
+      <div className="relative z-20 flex flex-col md:flex-row items-center justify-center w-full pt-4 pb-2 px-4 shrink-0">
+        {/* Back Button (Absolute on Desktop, static on mobile) */}
+        <button
+          onClick={() => router.push("/departments")}
+          className="md:absolute md:left-8 md:top-8 mb-4 md:mb-0 flex items-center gap-2 px-4 py-2 bg-[#fdf6e3] border-2 border-[#8b5a2b] rounded-lg shadow-md hover:bg-[#e3d5b8] hover:scale-105 transition-all text-[#651321] font-bold font-serif z-50"
+        >
+          <ArrowLeft size={20} />
+          <span>Return to Quests</span>
+        </button>
 
-                  const disabled = isSubmitted || status === 'loading' || attemptLoadingId === number.id;
+        {/* Dynamic Header */}
+        <div className="inline-block relative px-12 py-3 text-center">
+          <div className="absolute inset-0 bg-[#d4c5a3] transform -skew-x-12 border-2 border-[#8b5a2b] shadow-lg"></div>
+          <div className="absolute inset-0 bg-[#fdf6e3] transform skew-x-12 border-2 border-[#8b5a2b] shadow-lg opacity-90"></div>
 
-                  const stateText = isSubmitted ? 'Submitted' : isTakenOpen ? 'Opened' : 'Not opened';
-
-                  return (
-                    <button
-                      key={number.id}
-                      onClick={() => !disabled && handleNumberClick(number.id)}
-                      disabled={disabled}
-                      title={stateText}
-                      aria-label={`Question ${number.label} - ${stateText}`}
-                          className={
-                            `group relative flex items-center justify-center h-10 rounded-md border-0 px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ` +
-                            `${isSubmitted
-                              ? "bg-gradient-to-r from-[#0DB3A2] to-[#005F56] text-white cursor-not-allowed"
-                              : attemptLoadingId === number.id || status === 'loading'
-                              ? "bg-[#df7500]/50 text-[#651321] opacity-60 cursor-wait"
-                              : isTakenOpen
-                              ? "bg-gradient-to-r from-[#df7500] to-[#651321] text-[#fff] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/20"
-                              : "bg-[#cd880b]/20 text-[#651321] border border-[#dfd7d0] transition transform hover:-translate-y-0.5 active:scale-95 hover:bg-[#df7500]/10"}`
-                          }
-                    >
-                      <span className="pointer-events-none">{number.label}</span>
-
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+          <div className="relative flex flex-col items-center justify-center">
+            {/* Dynamic Quiz Name */}
+            <h1 className="text-2xl md:text-4xl font-bold text-[#651321] drop-shadow-sm tracking-wide font-serif leading-tight">
+              {loading ? "Loading..." : quizName}
+            </h1>
+            {/* Fixed Subtitle */}
+            <p className="text-[#8b5a2b] text-sm md:text-base font-bold italic tracking-widest mt-1 uppercase border-t border-[#8b5a2b] pt-1 w-full">
+              Quest Map
+            </p>
           </div>
         </div>
-
       </div>
 
-
-      <button
-        onClick={() => router.push('/departments')}
-        className="m-8 w-58 py-3 border rounded-xl bg-white text-[#651321] font-medium shadow hover:bg-[#df7500]/10 transition"
+      {/* Scrollable Map Container */}
+      <main
+        ref={scrollContainerRef}
+        className="relative flex-grow w-full overflow-auto custom-scrollbar flex items-center"
+        style={{ cursor: "grab" }}
       >
-         Back to Departments
-      </button>
-      <Footer />
+        <div
+          className="relative flex-shrink-0"
+          style={{
+            width: totalMapWidth,
+            height: MAP_HEIGHT,
+          }}
+        >
+          <svg
+            className="absolute top-0 left-0 pointer-events-none z-0"
+            width={totalMapWidth}
+            height={MAP_HEIGHT}
+            style={{ overflow: "visible" }}
+          >
+            <path
+              d={generatePath()}
+              fill="none"
+              stroke="rgba(44,24,16,0.1)"
+              strokeWidth="4"
+              className="blur-[2px]"
+            />
+            <path
+              d={generatePath()}
+              fill="none"
+              stroke="#5c4033"
+              strokeWidth="2"
+              strokeDasharray="8 6"
+              strokeLinecap="round"
+            />
+          </svg>
 
+          {!loading &&
+            !error &&
+            questions.map((q, index) => {
+              const point = pathPoints[index];
+              const randomRotate = ((index * 13) % 40) - 20;
+
+              return (
+                <Link
+                  href={`/quiz?quizId=${quizId}&q=${index}`}
+                  key={q}
+                  className="absolute group z-20 hover:z-30 transition-all duration-300"
+                  style={{
+                    left: point.x,
+                    top: point.y,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
+                    <div className="absolute inset-0 drop-shadow-xl filter sepia-[0.2]">
+                      <Image
+                        src="/wax-seal.svg"
+                        alt="Seal"
+                        fill
+                        className="object-contain"
+                        style={{ transform: `rotate(${randomRotate}deg)` }}
+                      />
+                    </div>
+                    <span
+                      className="relative font-bold text-xl md:text-2xl text-[#fdf6e3] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] font-serif group-hover:text-white"
+                      style={{ fontFamily: "Cinzel, serif" }}
+                    >
+                      {q}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+
+          {/* Decorative Assets */}
+          <div className="absolute top-10 left-10 w-32 h-32 opacity-40 pointer-events-none mix-blend-multiply">
+            <Image
+              src="/compass-rose.svg"
+              alt="Compass"
+              fill
+              className="object-contain compass-spin"
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* Frame Decorations */}
+      <div className="fixed top-0 left-0 w-24 h-24 pointer-events-none z-50 opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
+      </div>
+      <div className="fixed top-0 right-0 w-24 h-24 pointer-events-none z-50 transform scale-x-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
+      </div>
+      <div className="fixed bottom-0 left-0 w-24 h-24 pointer-events-none z-50 transform scale-y-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
+      </div>
+      <div className="fixed bottom-0 right-0 w-24 h-24 pointer-events-none z-50 transform scale-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
+      </div>
     </div>
   );
 }

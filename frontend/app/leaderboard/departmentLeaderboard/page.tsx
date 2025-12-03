@@ -100,9 +100,13 @@ const Leaderboard: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br p-4 relative"
-      style={{ position: 'relative', overflow: 'hidden' }}
+      className="min-h-screen p-4 relative"
+      style={{ 
+        background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)',
+        overflow: 'hidden' 
+      }}
     >
+      {/* Parchment texture */}
       <div
         style={{
           position: 'absolute',
@@ -110,42 +114,26 @@ const Leaderboard: React.FC = () => {
           left: 0,
           width: '100%',
           height: '100%',
-          background: '#FED9DF',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`,
+          opacity: 0.2,
           zIndex: 0,
+          pointerEvents: 'none'
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 1,
-          pointerEvents: 'none',
-          backgroundImage: 'url("/Container.png")',
-          backgroundSize: 'auto',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'top',
-          backgroundAttachment: 'scroll',
-        }}
-      />
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'rgba(255,255,255,0.6)',
-        zIndex: 1
-      }} />
+      {/* Map grid */}
+      <div className="map-grid" style={{ position: 'absolute', inset: 0, zIndex: 0 }} />
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
         <div className=" mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#651321' }}>
-            Leaderboard
+          <h1 className="text-4xl font-bold mb-2" style={{ 
+            fontFamily: 'Cinzel, serif',
+            color: '#651321',
+            letterSpacing: '0.05em',
+            textShadow: '2px 2px 4px rgba(112, 66, 20, 0.2)'
+          }}>
+            Hall of Champions
           </h1>
-          <p className="text-gray-600">{quizName ? `${quizName} — Quiz Rankings` : 'Quiz Rankings'}</p>
+          <p className="handwritten" style={{ color: '#4A3426', fontSize: '1.1rem' }}>{quizName ? `${quizName} — Quest Rankings` : 'Quest Rankings'}</p>
         </div>
 
 
@@ -153,7 +141,9 @@ const Leaderboard: React.FC = () => {
         {/* Top 3 Podium */}
         <div className="flex justify-center items-end mb-12 space-x-6">
           {/* Second Place */}
-          <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
+          <div className="text-center parchment-card p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56 relative" style={{ borderRadius: '50px' }}>
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_2.png"
@@ -163,13 +153,15 @@ const Leaderboard: React.FC = () => {
             </div>
             <h3
               title={schools[1]?.name}
-              className="font-semibold text-sm md:text-base text-center text-gray-800 mb-2 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-sm md:text-base text-center mb-2 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#2C1810' }}
             >
               {schools[1]?.name}
             </h3>
             <h3
               title={String(schools[1]?.score ?? '')}
-              className="font-semibold text-sm md:text-base text-center text-gray-800 mb-1 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-sm md:text-base text-center mb-1 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#DF7500' }}
             >
               {(() => {
                 const school = schools[1] as any;
@@ -183,7 +175,7 @@ const Leaderboard: React.FC = () => {
                 return school?.score ?? '-';
               })()}
             </h3>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm handwritten" style={{ color: '#4A3426' }}>
               {(() => {
                 const top = (schools[1] as any)?.students?.[0] as any;
                 return typeof top?.totalTimeTaken === 'number' ? `${(top.totalTimeTaken / 1000).toFixed(2)}s` : '-';
@@ -192,7 +184,11 @@ const Leaderboard: React.FC = () => {
           </div>
 
           {/* First Place */}
-          <div className="text-center mb-10 p-10 bg-white shadow-xl flex flex-col items-center justify-center w-56 md:w-72" style={{ borderRadius: '50px' }}>
+          <div className="text-center mb-10 p-10 parchment-card shadow-xl flex flex-col items-center justify-center w-56 md:w-72 relative" style={{ borderRadius: '50px' }}>
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_1.png"
@@ -202,13 +198,15 @@ const Leaderboard: React.FC = () => {
             </div>
             <h3
               title={schools[0]?.name}
-              className="font-semibold text-base md:text-lg text-center text-gray-800 mb-2 max-w-[12rem] md:max-w-[20rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-base md:text-lg text-center mb-2 max-w-[12rem] md:max-w-[20rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#2C1810' }}
             >
               {schools[0]?.name}
             </h3>
             <h3
               title={String(schools[0]?.score ?? '')}
-              className="font-semibold text-base md:text-lg text-center text-gray-800 mb-1 max-w-[12rem] md:max-w-[20rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-base md:text-lg text-center mb-1 max-w-[12rem] md:max-w-[20rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#DF7500' }}
             >
               {(() => {
                 const school = schools[0] as any;
@@ -222,7 +220,7 @@ const Leaderboard: React.FC = () => {
                 return school?.score ?? '-';
               })()}
             </h3>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm handwritten" style={{ color: '#4A3426' }}>
               {(() => {
                 const top = (schools[0] as any)?.students?.[0] as any;
                 return typeof top?.totalTimeTaken === 'number' ? `${(top.totalTimeTaken / 1000).toFixed(2)}s` : '-';
@@ -231,23 +229,27 @@ const Leaderboard: React.FC = () => {
           </div>
 
           {/* Third Place */}
-          <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
+          <div className="text-center parchment-card p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56 relative" style={{ borderRadius: '50px' }}>
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+            <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_3.png"
-                alt="First Place"
+                alt="Third Place"
                 className="w-20 md:w-24 h-auto block mx-auto"
               />
             </div>
             <h3
               title={schools[2]?.name}
-              className="font-semibold text-sm md:text-base text-center text-gray-800 mb-2 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-sm md:text-base text-center mb-2 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#2C1810' }}
             >
               {schools[2]?.name}
             </h3>
             <h3
               title={String(schools[2]?.score ?? '')}
-              className="font-semibold text-sm md:text-base text-center text-gray-800 mb-1 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              className="font-bold text-sm md:text-base text-center mb-1 max-w-[10rem] md:max-w-[16rem] whitespace-normal break-words leading-tight"
+              style={{ fontFamily: 'Cinzel, serif', color: '#DF7500' }}
             >
               {(() => {
                 const school = schools[2] as any;

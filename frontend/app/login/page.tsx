@@ -212,45 +212,49 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br p-4 relative flex items-center justify-center"
+      className="min-h-screen p-4 relative flex items-center justify-center"
       style={{
-        backgroundImage: 'url("/Container.png")',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center'
+        background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)'
       }}
     >
-      {/* Background overlay */}
+      {/* Parchment texture overlay */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
-        background: 'rgba(255,255,255,0.7)',
-        zIndex: 1
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`,
+        opacity: 0.2,
+        zIndex: 0,
+        pointerEvents: 'none'
       }} />
 
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 1 }}>
-        <div className="absolute w-96 h-96 bg-[#df7500]/10 rounded-full blur-3xl animate-pulse top-1/4 left-1/4" />
-        <div className="absolute w-64 h-64 bg-[#651321]/10 rounded-full blur-2xl animate-bounce top-3/4 right-1/4"
-          style={{ animationDuration: '4s' }} />
-      </div>
+      {/* Map grid */}
+      <div className="absolute inset-0 map-grid" style={{ zIndex: 0 }} />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
+        <div className="parchment-card rounded-2xl shadow-2xl p-8 backdrop-blur-sm relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
           {/* Login Icon and Heading */}
           <div className="flex flex-col items-center mb-6">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center mb-3 shadow-lg">
-              <LogIn className="w-7 h-7 text-white" />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-lg relative">
+              <img src="/wax-seal.svg" alt="" className="w-full h-full" />
+              <LogIn className="w-7 h-7 absolute" style={{ color: '#F4E8D0' }} />
             </div>
-            <h2 className="text-2xl font-bold text-[#651321] mb-1">Student Login</h2>
+            <h2 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Cinzel, serif', color: '#651321', letterSpacing: '0.05em' }}>Scholar's Entry</h2>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="border-2 px-4 py-3 rounded-lg mb-6" style={{
+              background: 'rgba(139, 0, 0, 0.1)',
+              borderColor: '#8B0000',
+              color: '#651321'
+            }}>
               {error}
             </div>
           )}
@@ -259,11 +263,14 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Mode toggle */}
             <div className="flex justify-between items-center mb-2">
-              <div className="text-sm text-gray-600">{isRegistering ? 'Register a new student' : 'Student Login'}</div>
+              <div className="text-sm handwritten" style={{ color: '#4A3426' }}>{isRegistering ? 'Register a new scholar' : 'Scholar Login'}</div>
               <button
                 type="button"
                 onClick={() => setIsRegistering(prev => !prev)}
-                className="text-sm text-[#651321] hover:text-[#df7500] font-medium"
+                className="text-sm font-medium"
+                style={{ color: '#651321', fontFamily: 'Cinzel, serif', letterSpacing: '0.02em' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#DF7500'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#651321'}
               >
                 {isRegistering ? 'Switch to Login' : 'Switch to Register'}
               </button>
@@ -272,41 +279,59 @@ export default function LoginPage() {
             {isRegistering ? (
               <>
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <label htmlFor="name" className="block text-sm font-bold mb-2" style={{ fontFamily: 'Cinzel, serif', color: '#2C1810', letterSpacing: '0.03em' }}>Full Name</label>
                   <input
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    className="block w-full px-3 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                    style={{
+                      borderColor: '#704214',
+                      backgroundColor: 'rgba(255, 248, 231, 0.5)',
+                      color: '#2C1810',
+                      fontFamily: 'Crimson Text, serif'
+                    }}
                     placeholder="Enter full name"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Gmail</label>
-                  <p className="text-xs text-gray-500 my-1">Use a working Gmail address.</p>
+                  <label htmlFor="email" className="block text-sm font-bold mb-2" style={{ fontFamily: 'Cinzel, serif', color: '#2C1810', letterSpacing: '0.03em' }}>Gmail</label>
+                  <p className="text-xs mb-1 handwritten" style={{ color: '#4A3426' }}>Use a working Gmail address.</p>
                   <input
                     id="email"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    className="block w-full px-3 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                    style={{
+                      borderColor: '#704214',
+                      backgroundColor: 'rgba(255, 248, 231, 0.5)',
+                      color: '#2C1810',
+                      fontFamily: 'Crimson Text, serif'
+                    }}
                     placeholder="Enter your Gmail address"
                     required
                   />
                   </div>
 
                 <div>
-                  <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                  <label htmlFor="studentId" className="block text-sm font-bold mb-2" style={{ fontFamily: 'Cinzel, serif', color: '#2C1810', letterSpacing: '0.03em' }}>Student ID</label>
                   <input
                     id="studentId"
                     name="studentId"
                     value={formData.studentId}
                     onChange={handleInputChange}
-                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                    className="block w-full px-3 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 transition-all"
+                    style={{
+                      borderColor: '#704214',
+                      backgroundColor: 'rgba(255, 248, 231, 0.5)',
+                      color: '#2C1810',
+                      fontFamily: 'Crimson Text, serif'
+                    }}
                     placeholder="Enter student ID"
                     required
                   />
@@ -316,7 +341,8 @@ export default function LoginPage() {
                     type="button"
                     onClick={handleRegisterThenGoogle}
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:shadow-lg hover:scale-[1.02] disabled:opacity-50"
+                    className="ancient-button w-full py-3 px-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50"
+                    style={{ letterSpacing: '0.05em' }}
                   >
                     {loading ? 'Processing…' : 'Register'}
                   </button>
@@ -328,7 +354,22 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={handleGoogleSignIn}
-                    className="w-full border border-gray-300 py-2 my-5 rounded-lg flex items-center justify-center gap-2 bg-white text-[#651321] hover:bg-gray-50"
+                    className="w-full border-2 py-3 my-5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all"
+                    style={{
+                      borderColor: '#704214',
+                      backgroundColor: 'rgba(244, 232, 208, 0.5)',
+                      color: '#651321',
+                      fontFamily: 'Cinzel, serif',
+                      letterSpacing: '0.03em'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(232, 213, 181, 0.7)';
+                      e.currentTarget.style.borderColor = '#C9A961';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(244, 232, 208, 0.5)';
+                      e.currentTarget.style.borderColor = '#704214';
+                    }}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden>
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -348,9 +389,16 @@ export default function LoginPage() {
           <div className="mt-4 text-center space-y-2">
             <button
               onClick={() => router.push('/')}
-              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full cursor-pointer"
+              className="font-bold transition-colors block w-full cursor-pointer"
+              style={{ 
+                color: '#651321',
+                fontFamily: 'Cinzel, serif',
+                letterSpacing: '0.03em'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#DF7500'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#651321'}
             >
-              Back to Home
+              Return to Map
             </button>
           </div>
         </div>
