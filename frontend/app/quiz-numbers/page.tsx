@@ -1,265 +1,276 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation"; // Added useRouter
+import { ArrowLeft } from "lucide-react"; // Importing an icon for the back button
 
 export default function QuizNumbersPage() {
+  const router = useRouter(); // Initialize router
   const searchParams = useSearchParams();
   const quizId = searchParams.get("quizId") || "1";
+
   const [questionCount, setQuestionCount] = useState<number>(0);
+  const [quizName, setQuizName] = useState<string>(""); // State for Quiz Name
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch quiz data to get the number of questions
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // --- Configuration ---
+  const ITEM_SPACING_X = 200;
+  const MAP_HEIGHT = 600;
+  const PADDING_X = 200;
+
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch quiz data: ${response.statusText}`);
-        }
-        
+        const apiUrl =
+          process.env.NEXT_PUBLIC_SERVER_API_URL || "http://localhost:5000/api";
+        const response = await fetch(`${apiUrl}/quizzes/${quizId}`);
+
+        if (!response.ok) throw new Error(`Failed to fetch quiz data`);
+
         const data = await response.json();
-        
-        if (data.success && data.quiz && data.quiz.questions) {
-          setQuestionCount(data.quiz.questions.length);
+
+        // Handle data structure variations
+        const qList = data.quiz?.questions || data.data?.questions || [];
+        // Fetch name with fallback
+        const qName = data.quiz?.name || data.data?.name || "Unknown Quest";
+
+        setQuizName(qName);
+
+        if (Array.isArray(qList)) {
+          setQuestionCount(qList.length);
         } else {
-          throw new Error("Invalid quiz data format");
+          setQuestionCount(10);
         }
       } catch (err) {
         console.error("Error fetching quiz:", err);
-        setError(err instanceof Error ? err.message : "Failed to load quiz");
-        setQuestionCount(10); // Fallback to 10 questions
+        setQuestionCount(10);
+        setQuizName("Mysterious Quest");
       } finally {
         setLoading(false);
       }
     };
-
     fetchQuizData();
   }, [quizId]);
 
-  // Generate dynamic questions array based on fetched count
   const questions = Array.from({ length: questionCount }, (_, i) => i + 1);
 
-  // Generate dynamic path points based on the number of questions
+  // --- Coordinate Logic ---
   const generatePathPoints = (count: number) => {
     const points = [];
-    const sections = Math.ceil(count / 2); // Divide into sections for winding pattern
-    
+    const Y_CENTER = MAP_HEIGHT / 2;
+    const Y_AMPLITUDE = 150;
+
     for (let i = 0; i < count; i++) {
-      const progress = i / (count - 1 || 1); // 0 to 1
-      const section = Math.floor(i / 2);
-      
-      // Create a winding pattern that adjusts to question count
-      let x, y;
-      
-      if (i % 4 === 0) {
-        x = 10 + (progress * 20);
-        y = 80 - (progress * 20);
-      } else if (i % 4 === 1) {
-        x = 30 + (progress * 20);
-        y = 60 - (progress * 10);
-      } else if (i % 4 === 2) {
-        x = 50 + (progress * 20);
-        y = 50 - (progress * 15);
-      } else {
-        x = 70 + (progress * 20);
-        y = 40 + (progress * 10);
-      }
-      
-      // Add some variation based on position
-      x = Math.min(95, Math.max(5, x + (i % 3 - 1) * 5));
-      y = Math.min(90, Math.max(10, y + (i % 2) * 10));
-      
+      const x = PADDING_X + i * ITEM_SPACING_X;
+      const wave = Math.sin(i * 0.8) * Y_AMPLITUDE;
+      const randomness = (i % 2 === 0 ? 20 : -20) + ((i * 13) % 40);
+      const y = Y_CENTER + wave + randomness * 0.5;
       points.push({ x, y });
     }
-    
     return points;
   };
 
   const pathPoints = generatePathPoints(questionCount);
+  const totalMapWidth =
+    pathPoints.length > 0
+      ? pathPoints[pathPoints.length - 1].x + PADDING_X
+      : "100%";
 
-  // Generate SVG path string
-  // Using cubic bezier curves for smooth winding road
   const generatePath = () => {
     if (pathPoints.length < 2) return "";
-
     let d = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
-
     for (let i = 0; i < pathPoints.length - 1; i++) {
       const p1 = pathPoints[i];
       const p2 = pathPoints[i + 1];
-
-      // Control points for curvature
-      // Alternating curve direction for "winding" effect
-      const cp1x = p1.x + (p2.x - p1.x) / 2;
-      const cp1y = i % 2 === 0 ? p1.y - 15 : p1.y + 15;
-
-      const cp2x = p1.x + (p2.x - p1.x) / 2;
-      const cp2y = i % 2 === 0 ? p2.y + 15 : p2.y - 15;
-
+      const cp1x = p1.x + ITEM_SPACING_X * 0.5;
+      const cp1y = p1.y;
+      const cp2x = p2.x - ITEM_SPACING_X * 0.5;
+      const cp2y = p2.y;
       d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
     }
-
     return d;
   };
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-[url('/parchment-bg.png')] bg-cover bg-center bg-no-repeat text-[var(--ink-dark)] font-serif">
-      {/* Overlay Textures */}
-      <div className="absolute inset-0 bg-[var(--parchment)] opacity-20 mix-blend-multiply pointer-events-none"></div>
-      <div className="absolute inset-0 map-grid pointer-events-none"></div>
+    <div className="h-screen w-full relative bg-[var(--parchment-light)] overflow-hidden flex flex-col">
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 12px;
+          width: 12px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(44, 24, 16, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #8b5a2b;
+          border-radius: 6px;
+          border: 2px solid #fdf6e3;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #651321;
+        }
+      `}</style>
 
-      {/* Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(44,24,16,0.4)_100%)] pointer-events-none z-10"></div>
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[url('/parchment-bg.png')] bg-cover bg-center opacity-50 pointer-events-none z-0"></div>
+      <div className="absolute inset-0 map-grid pointer-events-none z-0"></div>
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(44,24,16,0.3)_100%)] pointer-events-none z-10"></div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center z-50 bg-[var(--parchment)] bg-opacity-90">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[var(--sepia)] border-t-transparent mx-auto mb-4"></div>
-            <p className="text-xl font-bold text-[var(--ink-dark)]">Loading Quest Map...</p>
+      {/* Navigation & Header Container */}
+      <div className="relative z-20 flex flex-col md:flex-row items-center justify-center w-full pt-4 pb-2 px-4 shrink-0">
+        {/* Back Button (Absolute on Desktop, static on mobile) */}
+        <button
+          onClick={() => router.push("/departments")}
+          className="md:absolute md:left-8 md:top-8 mb-4 md:mb-0 flex items-center gap-2 px-4 py-2 bg-[#fdf6e3] border-2 border-[#8b5a2b] rounded-lg shadow-md hover:bg-[#e3d5b8] hover:scale-105 transition-all text-[#651321] font-bold font-serif z-50"
+        >
+          <ArrowLeft size={20} />
+          <span>Return to Quests</span>
+        </button>
+
+        {/* Dynamic Header */}
+        <div className="inline-block relative px-12 py-3 text-center">
+          <div className="absolute inset-0 bg-[#d4c5a3] transform -skew-x-12 border-2 border-[#8b5a2b] shadow-lg"></div>
+          <div className="absolute inset-0 bg-[#fdf6e3] transform skew-x-12 border-2 border-[#8b5a2b] shadow-lg opacity-90"></div>
+
+          <div className="relative flex flex-col items-center justify-center">
+            {/* Dynamic Quiz Name */}
+            <h1 className="text-2xl md:text-4xl font-bold text-[#651321] drop-shadow-sm tracking-wide font-serif leading-tight">
+              {loading ? "Loading..." : quizName}
+            </h1>
+            {/* Fixed Subtitle */}
+            <p className="text-[#8b5a2b] text-sm md:text-base font-bold italic tracking-widest mt-1 uppercase border-t border-[#8b5a2b] pt-1 w-full">
+              Quest Map
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Error State */}
-      {error && !loading && (
-        <div className="absolute inset-0 flex items-center justify-center z-50 bg-[var(--parchment)] bg-opacity-95">
-          <div className="text-center max-w-md px-6">
-            <h2 className="text-2xl font-bold text-red-700 mb-4">Quest Map Unavailable</h2>
-            <p className="text-[var(--ink-dark)] mb-6">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-[var(--deep-brown)] text-[var(--parchment-light)] font-bold rounded border-2 border-[var(--sepia)] hover:bg-[var(--sepia)] transition-colors"
-            >
-              Retry
-            </button>
+      {/* Scrollable Map Container */}
+      <main
+        ref={scrollContainerRef}
+        className="relative flex-grow w-full overflow-auto custom-scrollbar flex items-center"
+        style={{ cursor: "grab" }}
+      >
+        <div
+          className="relative flex-shrink-0"
+          style={{
+            width: totalMapWidth,
+            height: MAP_HEIGHT,
+          }}
+        >
+          <svg
+            className="absolute top-0 left-0 pointer-events-none z-0"
+            width={totalMapWidth}
+            height={MAP_HEIGHT}
+            style={{ overflow: "visible" }}
+          >
+            <path
+              d={generatePath()}
+              fill="none"
+              stroke="rgba(44,24,16,0.1)"
+              strokeWidth="4"
+              className="blur-[2px]"
+            />
+            <path
+              d={generatePath()}
+              fill="none"
+              stroke="#5c4033"
+              strokeWidth="2"
+              strokeDasharray="8 6"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          {!loading &&
+            !error &&
+            questions.map((q, index) => {
+              const point = pathPoints[index];
+              const randomRotate = ((index * 13) % 40) - 20;
+
+              return (
+                <Link
+                  href={`/quiz?quizId=${quizId}&q=${index}`}
+                  key={q}
+                  className="absolute group z-20 hover:z-30 transition-all duration-300"
+                  style={{
+                    left: point.x,
+                    top: point.y,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
+                    <div className="absolute inset-0 drop-shadow-xl filter sepia-[0.2]">
+                      <Image
+                        src="/wax-seal.svg"
+                        alt="Seal"
+                        fill
+                        className="object-contain"
+                        style={{ transform: `rotate(${randomRotate}deg)` }}
+                      />
+                    </div>
+                    <span
+                      className="relative font-bold text-xl md:text-2xl text-[#fdf6e3] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] font-serif group-hover:text-white"
+                      style={{ fontFamily: "Cinzel, serif" }}
+                    >
+                      {q}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+
+          {/* Decorative Assets */}
+          <div className="absolute top-10 left-10 w-32 h-32 opacity-40 pointer-events-none mix-blend-multiply">
+            <Image
+              src="/compass-rose.svg"
+              alt="Compass"
+              fill
+              className="object-contain compass-spin"
+            />
           </div>
         </div>
-      )}
-
-      {/* Header Banner */}
-      <header className="relative z-20 pt-4 md:pt-8 pb-2 md:pb-4 text-center">
-        <div className="inline-block relative px-8 py-3 md:px-12 md:py-4">
-          {/* Banner Background (SVG or CSS shape) */}
-          <div className="absolute inset-0 bg-[var(--parchment-dark)] transform -skew-x-12 border-2 border-[var(--sepia)] shadow-lg"></div>
-          <div className="absolute inset-0 bg-[var(--parchment)] transform skew-x-12 border-2 border-[var(--sepia)] shadow-lg opacity-80"></div>
-
-          <h1 className="relative text-3xl md:text-5xl font-bold text-[var(--ink-dark)] drop-shadow-md tracking-wider">
-            The Quest Map
-          </h1>
-          <p className="relative text-[var(--sepia)] text-sm md:text-base italic mt-1 font-bold">Journey of Knowledge</p>
-        </div>
-      </header>
-
-      {/* Main Map Area */}
-      <main className="relative w-full max-w-6xl mx-auto h-[75vh] md:h-[80vh] mt-2 md:mt-4">
-
-        {/* SVG Path Layer */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Shadow Path */}
-          <path
-            d={generatePath()}
-            fill="none"
-            stroke="rgba(44,24,16,0.2)"
-            strokeWidth="1.5"
-            strokeDasharray="2 1"
-            className="blur-[1px]"
-          />
-          {/* Main Path */}
-          <path
-            d={generatePath()}
-            fill="none"
-            stroke="var(--deep-brown)"
-            strokeWidth="0.8"
-            strokeDasharray="3 2"
-            strokeLinecap="round"
-          />
-        </svg>
-
-        {/* Markers */}
-        {!loading && !error && questions.map((q, index) => {
-          // Use the dynamically generated path points
-          const point = pathPoints[index] || pathPoints[pathPoints.length - 1];
-
-          // Randomize slight offset for "hand-drawn" feel
-          const randomRotate = (index * 13) % 20 - 10;
-
-          return (
-            <Link
-              href={`/quiz?id=${quizId}&q=${q}`}
-              key={q}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 group z-20 hover:z-30 transition-all duration-300"
-              style={{
-                left: `${point.x}%`,
-                top: `${point.y}%`,
-              }}
-            >
-              <div className="relative w-12 h-12 md:w-20 md:h-20 flex items-center justify-center cursor-pointer transition-transform duration-300 group-hover:scale-110">
-                {/* Wax Seal / Coin Background */}
-                <div className="absolute inset-0 drop-shadow-lg">
-                  <Image
-                    src="/wax-seal.svg"
-                    alt="Seal"
-                    fill
-                    className={`object-contain opacity-90 group-hover:opacity-100 transition-opacity`}
-                    style={{ transform: `rotate(${randomRotate}deg)` }}
-                  />
-                </div>
-
-                {/* Number */}
-                <span className="relative font-bold text-lg md:text-2xl text-[var(--parchment-light)] drop-shadow-md font-serif group-hover:text-white">
-                  {q}
-                </span>
-
-                {/* Hover Tooltip */}
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[var(--parchment-light)] border border-[var(--sepia)] px-3 py-1 rounded shadow-md text-xs md:text-sm font-bold whitespace-nowrap text-[var(--ink-dark)] pointer-events-none hidden md:block">
-                  Question {q}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-
-        {/* Decorative Elements */}
-
-        {/* Compass Rose */}
-        <div className="absolute bottom-4 right-4 w-20 h-20 md:bottom-8 md:right-8 md:w-48 md:h-48 opacity-80 pointer-events-none">
-          <Image src="/compass-rose.svg" alt="Compass" fill className="object-contain compass-spin" />
-        </div>
-
-        {/* Globe/Ship */}
-        <div className="absolute top-10 left-10 w-24 h-24 opacity-60 pointer-events-none hidden md:block">
-          <Image src="/globe.svg" alt="Globe" fill className="object-contain" />
-        </div>
-
-        {/* Scroll Decoration */}
-        <div className="absolute bottom-10 left-20 w-32 h-auto opacity-70 pointer-events-none hidden md:block transform -rotate-12">
-          <Image src="/scroll-decoration.svg" alt="Scroll" width={120} height={60} className="object-contain" />
-        </div>
-
       </main>
 
-      {/* Corner Decorations */}
-      <div className="fixed top-0 left-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50">
-        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      {/* Frame Decorations */}
+      <div className="fixed top-0 left-0 w-24 h-24 pointer-events-none z-50 opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
       </div>
-      <div className="fixed top-0 right-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-x-[-1]">
-        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      <div className="fixed top-0 right-0 w-24 h-24 pointer-events-none z-50 transform scale-x-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
       </div>
-      <div className="fixed bottom-0 left-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-y-[-1]">
-        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      <div className="fixed bottom-0 left-0 w-24 h-24 pointer-events-none z-50 transform scale-y-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
       </div>
-      <div className="fixed bottom-0 right-0 w-16 h-16 md:w-32 md:h-32 pointer-events-none z-50 transform scale-[-1]">
-        <Image src="/corner-decoration.svg" alt="Corner" fill className="object-contain" />
+      <div className="fixed bottom-0 right-0 w-24 h-24 pointer-events-none z-50 transform scale-[-1] opacity-80">
+        <Image
+          src="/corner-decoration.svg"
+          alt="Corner"
+          fill
+          className="object-contain"
+        />
       </div>
-
     </div>
   );
 }
