@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// Add user property to Express Request interface
+
 declare global {
     namespace Express {
         interface Request {
@@ -23,7 +23,7 @@ export const protect = async (
     try {
         let token;
 
-        // Check for token in Authorization header
+        
         if (
             req.headers.authorization &&
             req.headers.authorization.startsWith('Bearer')
@@ -31,7 +31,12 @@ export const protect = async (
             token = req.headers.authorization.split(' ')[1];
         }
 
-        // Check if token exists
+        
+        if (!token && (req as any).cookies && (req as any).cookies.authToken) {
+            token = (req as any).cookies.authToken;
+        }
+
+        
         if (!token) {
             res.status(401).json({
                 success: false,
@@ -44,19 +49,24 @@ export const protect = async (
         console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
 
         try {
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key') as {
-                id: string;
-                iat?: number;
-                exp?: number;
-            };
+            
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key') as any;
 
             console.log("\nDecoded token:", decoded);
 
-            // Verify token corresponds to a user id and attach user info
-            const user = await User.findById(decoded.id).lean();
+            
+            
+            const userId = decoded?.id || decoded?.sub || decoded?._id;
+            if (!userId) {
+                console.log("No user id found in token claims. Claims:", decoded);
+                res.status(401).json({ success: false, message: 'Invalid token claims' });
+                return;
+            }
+
+            
+            const user = await User.findById(userId).lean();
             if (!user) {
-                console.log("User not found with ID:", decoded.id);
+                console.log("User not found with ID:", userId);
                 res.status(401).json({ success: false, message: 'User not found' });
                 return;
             }

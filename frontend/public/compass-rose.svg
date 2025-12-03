@@ -1,0 +1,39 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="100" cy="100" r="95" stroke="#8B4513" stroke-width="2" fill="none" opacity="0.3"/>
+  <circle cx="100" cy="100" r="85" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.2"/>
+  
+  <!-- Main compass points -->
+  <g stroke="#8B4513" stroke-width="2" fill="#D2691E" opacity="0.8">
+    <!-- North -->
+    <path d="M100 10 L110 90 L100 80 L90 90 Z" fill="#8B4513"/>
+    <!-- South -->
+    <path d="M100 190 L110 110 L100 120 L90 110 Z" fill="#A0522D"/>
+    <!-- East -->
+    <path d="M190 100 L110 110 L120 100 L110 90 Z" fill="#A0522D"/>
+    <!-- West -->
+    <path d="M10 100 L90 110 L80 100 L90 90 Z" fill="#8B4513"/>
+  </g>
+  
+  <!-- Secondary compass points -->
+  <g stroke="#8B4513" stroke-width="1.5" fill="#D2B48C" opacity="0.6">
+    <!-- NE -->
+    <path d="M155 45 L110 95 L105 85 Z"/>
+    <!-- SE -->
+    <path d="M155 155 L110 105 L115 105 Z"/>
+    <!-- SW -->
+    <path d="M45 155 L90 105 L95 115 Z"/>
+    <!-- NW -->
+    <path d="M45 45 L90 95 L85 95 Z"/>
+  </g>
+  
+  <!-- Center circle -->
+  <circle cx="100" cy="100" r="12" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+  <circle cx="100" cy="100" r="6" fill="#D2691E"/>
+  
+  <!-- Direction markers -->
+  <text x="100" y="25" font-family="serif" font-size="16" fill="#654321" text-anchor="middle" font-weight="bold">N</text>
+  <text x="100" y="183" font-family="serif" font-size="16" fill="#654321" text-anchor="middle" font-weight="bold">S</text>
+  <text x="180" y="105" font-family="serif" font-size="16" fill="#654321" text-anchor="middle" font-weight="bold">E</text>
+  <text x="20" y="105" font-family="serif" font-size="16" fill="#654321" text-anchor="middle" font-weight="bold">W</text>
+</svg>

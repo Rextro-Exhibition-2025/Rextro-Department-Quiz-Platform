@@ -7,7 +7,6 @@ export interface IUser extends Document {
   googleId?: string;
   authProvider?: 'local' | 'google';
   marks?: number;
-  passwordHash?: string;
   createdAt?: Date;
 }
 
@@ -18,7 +17,6 @@ const userSchema: Schema = new Schema({
   googleId: { type: String, required: false, unique: true, sparse: true },
   authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
   marks: { type: Number, default: 0 },
-  passwordHash: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 

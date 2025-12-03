@@ -12,7 +12,7 @@ export const adminOnly = async (
         let token;
 
 
-        // Check for token in Authorization header
+        
         if (
             req.headers.authorization &&
             req.headers.authorization.startsWith('Bearer')
@@ -22,7 +22,7 @@ export const adminOnly = async (
         console.log(token);
         
 
-        // Check if token exists
+        
         if (!token) {
             res.status(401).json({
                 success: false,
@@ -30,12 +30,20 @@ export const adminOnly = async (
             });
             return;
         }
-        // Verify token using shared secret (prefer JWT_SECRET for API tokens)
+        
         const verifySecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your_secret_key';
 
         try {
             const decoded = jwt.verify(token, verifySecret) as { email?: string; name?: string; exp?: number };
-            // Optionally: attach admin info to request for downstream handlers
+            
+            const adminEmailsRaw = process.env.ADMIN_EMAILS || '';
+            const adminEmails = adminEmailsRaw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+            const emailLower = (decoded.email || '').toLowerCase();
+            if (adminEmails.length > 0 && !adminEmails.includes(emailLower)) {
+                res.status(403).json({ success: false, message: 'Forbidden: not an admin' });
+                return;
+            }
+
             (req as any).admin = {
                 email: decoded.email,
                 name: decoded.name,

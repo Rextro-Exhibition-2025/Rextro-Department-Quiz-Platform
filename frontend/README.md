@@ -46,7 +46,7 @@ npm run dev
 - **Access**: Quiz and leaderboard
 
 ### Admin Access
-- **Route**: `/admin/login`
+- **Route**: `/admin-access`
 - **Method**: Google OAuth only
 - **Setup**: Add your email to `ADMIN_EMAILS` in `.env.local`
 - **Access**: Question management panel
