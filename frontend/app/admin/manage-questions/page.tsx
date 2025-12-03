@@ -118,7 +118,7 @@ useEffect(() => {
 
 	if (status === "loading") {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100">
+			<div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)' }}>
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#df7500]"></div>
 			</div>
 		);
@@ -203,36 +203,50 @@ useEffect(() => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
-			<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
+		<div className="min-h-screen p-4 relative" style={{ background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)' }}>
+			{/* Parchment texture */}
+			<div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+				backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`
+			}} />
+			{/* Map grid */}
+			<div className="absolute inset-0 map-grid pointer-events-none" style={{ zIndex: 0 }} />
 			<div className="max-w-4xl mx-auto relative z-10">
-				<div className="flex items-center justify-between mb-6">
-					<h1 className="text-2xl font-bold text-gray-800">Manage Questions</h1>
+				<div className="parchment-card rounded-2xl p-6 mb-6 relative">
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+					<div className="flex items-center justify-between">
+					<h1 className="text-3xl font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321', letterSpacing: '0.03em' }}>Manage Questions</h1>
 					<div className="flex items-center gap-3">
 						<button
 							onClick={handlePublish}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold shadow-lg transition-all duration-200"
+							style={{
+								fontFamily: 'Cinzel, serif',
+								background: 'linear-gradient(135deg, #fdf6e3 0%, #e3d5b8 100%)',
+								color: '#4a2511',
+								border: '2px solid #8b5a2b'
+							}}
 							aria-label="Publish Quizzers"
 						>
-							{/* simple publish label; use icon if desired */}
 							{published ? 'Unpublish Quizzers' : 'Publish Quizzers'}
 						</button>
 						<button
 							onClick={() => router.push("/admin/add-question")}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="ancient-button flex items-center gap-2 px-4 py-2 rounded-lg font-bold shadow-lg hover:scale-105 transition-all duration-200"
 						>
 							<Plus size={18} /> Add New Question
 						</button>
 					</div>
+					</div>
 				</div>
-				<div className="flex items-center gap-6 mb-6">
+				<div className="parchment-card rounded-2xl p-6 mb-6 relative">
+					<div className="flex flex-wrap items-center gap-4">
 						<button
 							onClick={() => setShowCreateModal(true)}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="ancient-button flex items-center gap-2 px-4 py-2 rounded-lg font-bold shadow-lg hover:scale-105 transition-all duration-200"
 						>
 							<Plus size={18} /> Add Question Set
 						</button>
-						{/* Quiz selector placed between Publish and Add buttons */}
 						<button
 							onClick={() => {
 								if (!selectedQuizSet) return;
@@ -241,32 +255,47 @@ useEffect(() => {
 								setEditSetName(selected.name || '');
 								setShowEditModal(true);
 							}}
-							className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold shadow-lg transition-all duration-200"
+							style={{
+								fontFamily: 'Cinzel, serif',
+								background: 'linear-gradient(135deg, #fdf6e3 0%, #e3d5b8 100%)',
+								color: '#4a2511',
+								border: '2px solid #8b5a2b'
+							}}
 							aria-label="Edit selected quiz set"
 						>
 							<Edit size={16} /> Edit Set
 						</button>
-						<div className="">
+						<div className="flex-1 min-w-[200px]">
 							<label htmlFor="quizSelectHeader" className="sr-only">Select Quiz</label>
 							<select
 								id="quizSelectHeader"
 								value={selectedQuizSet}
 								onChange={(e) => setSelectedQuizSet(e.target.value)}
 								disabled={isLoadingTab}
-								className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] bg-white"
+								className="block w-full px-4 py-2 rounded-lg font-semibold shadow-sm transition-all duration-200"
+								style={{
+									fontFamily: 'Cinzel, serif',
+									background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+									color: '#4a2511',
+									border: '2px solid #704214'
+								}}
 							>
 								{quizSets.map((set) => (
 										<option key={set.quizId} value={String(set.quizId)}>{`${set.name} - ${countsBySet[String(set.quizId)] ?? 0}`}</option>
 									))}
 							</select>
 						</div>
+					</div>
 				</div>
 
-				{showCreateModal && (
-					<div className="fixed inset-0 z-50 flex items-center justify-center">
-						<div className="absolute inset-0 bg-black opacity-40" onClick={() => setShowCreateModal(false)} />
-						<div className="bg-white rounded-lg p-6 z-60 w-full max-w-md shadow-lg text-gray-900">
-							<h2 className="text-lg font-bold mb-4 text-gray-900">Create Question Set</h2>
+			{showCreateModal && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center">
+					<div className="absolute inset-0 bg-black opacity-40 backdrop-blur-sm" onClick={() => setShowCreateModal(false)} />
+					<div className="parchment-card rounded-2xl p-8 z-60 w-full max-w-md shadow-2xl relative">
+						<img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+						<img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+						<h2 className="text-2xl font-bold mb-4" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Create Question Set</h2>
 							<input
 								autoFocus
 								value={newSetName}
@@ -346,7 +375,7 @@ useEffect(() => {
 										}
 									}}
 									disabled={editingSet}
-									className="px-4 py-2 rounded bg-gradient-to-r from-[#df7500] to-[#651321] text-white"
+									className="ancient-button px-6 py-2 rounded-lg font-bold shadow-lg transition-all duration-200"
 								>
 									{editingSet ? 'Saving...' : 'Save'}
 								</button>
@@ -356,7 +385,11 @@ useEffect(() => {
 				)}
 
 				{/* Panel content for the selected quiz set */}
-				<div className="bg-white rounded-2xl shadow-lg p-6">
+				<div className="parchment-card rounded-2xl shadow-xl p-6 relative">
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
 					{isTableLoading ? (
 						<div className="flex justify-center items-center">
 							<div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-transparent"></div>
@@ -364,26 +397,26 @@ useEffect(() => {
 					) : filteredQuestions?.length === 0 ? (
 						<div className="text-center text-gray-500">No questions found.</div>
 					) : (
-						<table className="min-w-full divide-y divide-gray-200">
+						<table className="min-w-full divide-y" style={{ borderColor: '#8b5a2b' }}>
 							<thead>
-								<tr>
-									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Question</th>
-									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Correct Answer</th>
-									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+								<tr style={{ background: 'linear-gradient(135deg, #e3d5b8 0%, #d4c5a3 100%)' }}>
+									<th className="px-4 py-3 text-left text-sm font-bold uppercase" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Question</th>
+									<th className="px-4 py-3 text-left text-sm font-bold uppercase" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Correct Answer</th>
+									<th className="px-4 py-3 text-left text-sm font-bold uppercase" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Actions</th>
 								</tr>
 							</thead>
 							<tbody>
 								{filteredQuestions?.map((q) => {
 									const correct = q.answers.find(a => a.id === q.correctAnswer);
 									return (
-										<tr key={q.id} className="hover:bg-gray-50">
-											<td className="px-4 py-2 text-gray-800 max-w-xs truncate">{q.question}</td>
-											<td className="px-4 py-2 text-gray-800 ">{correct ? correct.text : '-'}</td>
-											<td className="px-4 py-2">
+										<tr key={q.id} className="border-b hover:bg-opacity-50 transition-colors" style={{ borderColor: '#d4c5a3', background: 'rgba(255, 248, 231, 0.3)' }}>
+											<td className="px-4 py-3 max-w-xs truncate font-medium" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>{q.question}</td>
+											<td className="px-4 py-3 font-medium" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>{correct ? correct.text : '-'}</td>
+											<td className="px-4 py-3">
 												<button
 													onClick={() => handleEdit(q.id)}
 													disabled={loadingQuestionId === q.id}
-													className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+													className="ancient-button px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 													title="Edit"
 												>
 													{loadingQuestionId === q.id ? (
@@ -403,19 +436,21 @@ useEffect(() => {
 					)}
 				</div>
 				{/* Instructions card (styled like Add New Question page) */}
-				<div className="bg-white rounded-2xl shadow-lg p-6 my-6 border-2 border-orange-100">
-					<div className="flex items-start space-x-4 mb-4">
-						<div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center shadow-md">
-							<span className="text-white text-lg font-bold">i</span>
+				<div className="parchment-card rounded-2xl shadow-xl p-8 my-6 relative">
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+					<img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+					<div className="flex items-start space-x-4 mb-6">
+						<div className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(180deg, #c04000 0%, #4a2511 100%)' }}>
+							<span className="text-white text-2xl font-bold" style={{ fontFamily: 'Cinzel, serif' }}>i</span>
 						</div>
 						<div className="flex-1">
-							<h2 className="text-lg font-bold text-gray-800">Quick Instructions</h2>
-							<p className="text-sm text-gray-600 mt-1">Follow these steps to manage question sets and add questions.</p>
+							<h2 className="text-xl font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Quick Instructions</h2>
+							<p className="text-sm font-medium mt-1" style={{ color: '#4a2511', fontFamily: 'Crimson Text, serif' }}>Follow these steps to manage question sets and add questions.</p>
 						</div>
 					</div>
 
-					<div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
-						<ul className="text-sm text-gray-700 space-y-3">
+					<div className="rounded-xl p-6 relative" style={{ background: 'linear-gradient(135deg, rgba(255, 248, 231, 0.6) 0%, rgba(232, 213, 181, 0.6) 100%)', border: '2px solid #8b5a2b' }}>
+						<ul className="text-sm font-medium space-y-3" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>
 							<li className="flex items-start">
 								<span className="mr-3 font-bold text-orange-600">•</span>
 								<span><strong>First — create Question Sets:</strong> Click <strong>"Add Question Set"</strong> to create and save one or more sets on the server.</span>
@@ -439,9 +474,8 @@ useEffect(() => {
 						</ul>
 					</div>
 				</div>
-				
 			</div>
-			</div>
-		);
-		}
+		</div>
+	);
+}
 

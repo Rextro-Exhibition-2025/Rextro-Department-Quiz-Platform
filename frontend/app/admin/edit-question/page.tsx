@@ -405,7 +405,13 @@ function EditQuestionContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
+    <div className="min-h-screen p-4 relative" style={{ background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)' }}>
+      {/* Parchment texture */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`
+      }} />
+      {/* Map grid */}
+      <div className="absolute inset-0 map-grid pointer-events-none" style={{ zIndex: 0 }} />
       {/* Error Modal for Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -530,14 +536,16 @@ function EditQuestionContent() {
           </div>
         </div>
       )}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="parchment-card rounded-2xl shadow-xl p-6 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-800">Edit Question</h1>
+              <h1 className="text-3xl font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321', letterSpacing: '0.03em' }}>Edit Question</h1>
               {hasUnsavedChanges && (
-                <span className="px-3 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full border border-orange-300">
+                <span className="px-3 py-1 text-xs font-bold rounded-full border shadow-sm" style={{ background: 'rgba(223, 117, 0, 0.1)', color: '#c04000', borderColor: '#c04000' }}>
                   Unsaved Changes
                 </span>
               )}
@@ -545,14 +553,22 @@ function EditQuestionContent() {
           </div>
         </div>
         {/* ...existing code... */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Question Details</h2>
+        <div className="parchment-card rounded-2xl shadow-xl p-8 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <h2 className="text-xl font-bold mb-6" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Question Details</h2>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Set *</label>
+            <label className="block text-sm font-bold mb-3" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Quiz Set *</label>
             <select
               value={question.quizSet}
               onChange={e => setQuestion(q => q ? { ...q, quizSet: e.target.value } : q)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 text-gray-800  transition-all duration-200 cursor-pointer"
+              className="w-full p-4 rounded-xl font-semibold shadow-md transition-all duration-200"
+              style={{
+                fontFamily: 'Crimson Text, serif',
+                background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                color: '#2a1a11',
+                border: '2px solid #704214'
+              }}
             >
               <option value="">Select a quiz set</option>
               {quizSets.map((s) => (
@@ -561,11 +577,17 @@ function EditQuestionContent() {
             </select>
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Question Text *</label>
+            <label className="block text-sm font-bold mb-3" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Question Text *</label>
             <textarea
               value={question.question}
               onChange={e => setQuestion(q => q ? { ...q, question: e.target.value } : q)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 resize-none placeholder-gray-400 text-gray-800 font-medium text-left shadow-sm focus:shadow-md"
+              className="w-full p-4 rounded-xl resize-none shadow-md font-medium transition-all duration-200"
+              style={{
+                fontFamily: 'Crimson Text, serif',
+                background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                color: '#2a1a11',
+                border: '2px solid #704214'
+              }}
               rows={3}
               placeholder="Enter your question here..."
             />
@@ -608,13 +630,17 @@ function EditQuestionContent() {
             recommendedSize="1024×768px (displays up to 768px wide in quiz)"
           />
         </div>
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Answer Options</h2>
+        <div className="parchment-card rounded-2xl shadow-xl p-8 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
+          <h2 className="text-xl font-bold mb-6" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Answer Options</h2>
           <div className="space-y-4">
             {question.answers.map((answer, index) => (
-              <div key={answer.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-700">Option {answer.id.toUpperCase()}</label>
+              <div key={answer.id} className="rounded-xl p-5 shadow-md transition-all duration-200" style={{ background: 'linear-gradient(135deg, rgba(255, 248, 231, 0.5) 0%, rgba(244, 232, 208, 0.5) 100%)', border: '2px solid #8b5a2b' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>Option {answer.id.toUpperCase()}</label>
                   <label className="flex items-center space-x-2">
                     <input
                       type="radio"
@@ -622,17 +648,23 @@ function EditQuestionContent() {
                       value={answer.id}
                       checked={question.correctAnswer === answer.id}
                       onChange={() => setQuestion(q => q ? { ...q, correctAnswer: answer.id } : q)}
-                      className="text-[#df7500] focus:ring-[#df7500]"
+                      className="text-[#c04000] focus:ring-[#c04000]"
                     />
-                    <span className="text-sm text-gray-600">Correct Answer</span>
+                    <span className="text-sm font-semibold" style={{ color: '#4a2511', fontFamily: 'Crimson Text, serif' }}>Correct Answer</span>
                   </label>
                 </div>
-                <div className="mb-3">
+                <div className="mb-4">
                   <input
                     type="text"
                     value={answer?.text || ""}
                     onChange={e => setQuestion(q => q ? { ...q, answers: q.answers.map((a, i) => i === index ? { ...a, text: e.target.value } : a) } : q)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+                    className="w-full p-4 rounded-xl shadow-md font-medium transition-all duration-200"
+                    style={{
+                      fontFamily: 'Crimson Text, serif',
+                      background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                      color: '#2a1a11',
+                      border: '2px solid #704214'
+                    }}
                     placeholder={`Enter text for option ${answer.id.toUpperCase()}`}
                   />
                 </div>
@@ -692,7 +724,7 @@ function EditQuestionContent() {
 
         {/* Action Buttons at the bottom */}
         <div className="p-6 mt-6">
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-4">
             <button
               onClick={() => {
                 if (hasUnsavedChanges) {
@@ -702,14 +734,26 @@ function EditQuestionContent() {
                 }
               }}
               disabled={isSaving || isDeleting}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="flex items-center space-x-2 px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: 'linear-gradient(135deg, #e3d5b8 0%, #d4c5a3 100%)',
+                color: '#4a2511',
+                border: '2px solid #8b5a2b'
+              }}
             >
               <span>Cancel</span>
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               disabled={isSaving || isDeleting}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="flex items-center space-x-2 px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: 'linear-gradient(180deg, #c04000 0%, #651321 100%)',
+                color: '#fdf6e3',
+                border: '2px solid #651321'
+              }}
             >
               {isDeleting ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -721,7 +765,7 @@ function EditQuestionContent() {
             <button
               onClick={handleSave}
               disabled={isSaving || isDeleting}
-              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="ancient-button flex items-center space-x-2 px-8 py-3 rounded-lg font-bold shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isSaving ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

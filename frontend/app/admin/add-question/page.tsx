@@ -338,7 +338,13 @@ export default function AddQuestion(): React.ReactElement | null {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
+    <div className="min-h-screen p-4 relative" style={{ background: 'linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)' }}>
+      {/* Parchment texture */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`
+      }} />
+      {/* Map grid */}
+      <div className="absolute inset-0 map-grid pointer-events-none" style={{ zIndex: 0 }} />
       {/* Error Modal for Save Button Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -365,12 +371,14 @@ export default function AddQuestion(): React.ReactElement | null {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="parchment-card rounded-2xl shadow-xl p-6 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="text-3xl font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321', letterSpacing: '0.03em' }}>
                 Add New Question
               </h1>
             </div>
@@ -378,79 +386,75 @@ export default function AddQuestion(): React.ReactElement | null {
         </div>
 
         {/* Instructions Card - Separate from form */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-orange-100">
-          <div className="flex items-start space-x-3 mb-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center">
-              <span className="text-white text-xl">📝</span>
+        <div className="parchment-card rounded-2xl shadow-xl p-8 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <div className="flex items-start space-x-4 mb-6">
+            <div className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(180deg, #c04000 0%, #4a2511 100%)' }}>
+              <span className="text-white text-2xl font-bold" style={{ fontFamily: 'Cinzel, serif' }}>📝</span>
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-gray-800">
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
                 Instructions & Image Guidelines
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm font-medium mt-1" style={{ color: '#4a2511', fontFamily: 'Crimson Text, serif' }}>
                 Please read these guidelines before adding questions
               </p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
-            <ul className="text-sm text-gray-700 space-y-2.5">
+          <div className="rounded-xl p-6 relative" style={{ background: 'linear-gradient(135deg, rgba(255, 248, 231, 0.6) 0%, rgba(232, 213, 181, 0.6) 100%)', border: '2px solid #8b5a2b' }}>
+            <ul className="text-sm font-medium space-y-3" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>
               <li className="flex items-start">
-                <span className="mr-2 font-bold text-orange-600 text-base">
-                  •
-                </span>
+                <span className="mr-3 font-bold text-lg" style={{ color: '#c04000' }}>✦</span>
                 <span>Fill in the question text (required)</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 font-bold text-orange-600 text-base">
-                  •
-                </span>
+                <span className="mr-3 font-bold text-lg" style={{ color: '#c04000' }}>✦</span>
                 <span>
                   Add answer options - you can use text, images, or both
                 </span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2 font-bold text-orange-600 text-base">
-                  •
-                </span>
+                <span className="mr-3 font-bold text-lg" style={{ color: '#c04000' }}>✦</span>
                 <span>At least one answer option must be provided</span>
               </li>
             </ul>
 
             <div className="mt-5 pt-5 border-t border-orange-300">
-              <div className="flex items-center space-x-2 mb-3">
-                <span className="text-xl">🖼️</span>
-                <h3 className="text-sm font-bold text-gray-800">
+              <div className="flex items-center space-x-2 mb-4">
+                <span className="text-2xl">🖼️</span>
+                <h3 className="text-base font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
                   Recommended Image Sizes (displayed large in quiz):
                 </h3>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow-sm">
-                  <p className="font-bold text-orange-700 mb-2 flex items-center">
+                <div className="parchment-card p-4 rounded-lg shadow-md">
+                  <p className="font-bold flex items-center mb-3" style={{ color: '#c04000', fontFamily: 'Cinzel, serif' }}>
                     <span className="mr-2">🖼️</span> Question Image:
                   </p>
-                  <ul className="text-xs text-gray-700 space-y-1.5 ml-1">
+                  <ul className="text-xs font-medium space-y-2 ml-1" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>
                     <li className="flex items-start">
-                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span className="mr-2" style={{ color: '#c04000' }}>▸</span>
                       <span>
                         <b>Size:</b> 1024×768 pixels or larger for best quality
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span className="mr-2" style={{ color: '#c04000' }}>▸</span>
                       <span>
                         <b>Format:</b> JPG, PNG, or GIF
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span className="mr-2" style={{ color: '#c04000' }}>▸</span>
                       <span>
                         <b>Max file size:</b> 2MB
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span className="mr-2" style={{ color: '#c04000' }}>▸</span>
                       <span>
                         <b>Display:</b> Up to 768px wide in quiz (full width on
                         mobile)
@@ -459,13 +463,13 @@ export default function AddQuestion(): React.ReactElement | null {
                   </ul>
                 </div>
 
-                <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow-sm">
-                  <p className="font-bold text-orange-700 mb-2 flex items-center">
+                <div className="parchment-card p-4 rounded-lg shadow-md">
+                  <p className="font-bold flex items-center mb-3" style={{ color: '#c04000', fontFamily: 'Cinzel, serif' }}>
                     <span className="mr-2">📸</span> Answer Option Images:
                   </p>
-                  <ul className="text-xs text-gray-700 space-y-1.5 ml-1">
+                  <ul className="text-xs font-medium space-y-2 ml-1" style={{ color: '#2a1a11', fontFamily: 'Crimson Text, serif' }}>
                     <li className="flex items-start">
-                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span className="mr-2" style={{ color: '#c04000' }}>▸</span>
                       <span>
                         <b>Size:</b> 600×600 pixels or larger recommended
                       </span>
@@ -570,13 +574,15 @@ export default function AddQuestion(): React.ReactElement | null {
         )}
 
         {/* Question Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="parchment-card rounded-2xl shadow-xl p-8 mb-6 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <h2 className="text-xl font-bold mb-6" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
             Question Details
           </h2>
           {/* Quiz Set Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-3" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
               Quiz Set *
             </label>
             <div className="flex items-center space-x-2">
@@ -593,7 +599,13 @@ export default function AddQuestion(): React.ReactElement | null {
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     handleQuizSetChange(e.target.value)
                   }
-                  className="w-full p-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-800"
+                  className="w-full p-3 rounded-lg font-semibold shadow-sm transition-all duration-200"
+                  style={{
+                    fontFamily: 'Crimson Text, serif',
+                    background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                    color: '#2a1a11',
+                    border: '2px solid #704214'
+                  }}
                 >
                   <option value="">Select set</option>
                   {quizSets.map((s) => (
@@ -607,7 +619,7 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
           {/* Question Text */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold mb-3" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
               Question Text *
             </label>
             <textarea
@@ -615,7 +627,13 @@ export default function AddQuestion(): React.ReactElement | null {
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 handleQuestionChange(e.target.value)
               }
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 resize-none placeholder-gray-400 text-gray-800 font-medium text-left shadow-sm focus:shadow-md"
+              className="w-full p-4 rounded-xl resize-none shadow-md transition-all duration-200 font-medium"
+              style={{
+                fontFamily: 'Crimson Text, serif',
+                background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                color: '#2a1a11',
+                border: '2px solid #704214'
+              }}
               rows={3}
               placeholder="Enter your question here..."
             />
@@ -651,8 +669,12 @@ export default function AddQuestion(): React.ReactElement | null {
         </div>
 
         {/* Answers Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="parchment-card rounded-2xl shadow-xl p-8 relative">
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration top-right" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-left" />
+          <img src="/corner-decoration.svg" alt="" className="corner-decoration bottom-right" />
+          <h2 className="text-xl font-bold mb-6" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
             Answer Options
           </h2>
 
@@ -660,10 +682,11 @@ export default function AddQuestion(): React.ReactElement | null {
             {question.answers.map((answer, index) => (
               <div
                 key={answer.id}
-                className="border border-gray-200 rounded-lg p-4"
+                className="rounded-xl p-5 shadow-md transition-all duration-200"
+                style={{ background: 'linear-gradient(135deg, rgba(255, 248, 231, 0.5) 0%, rgba(244, 232, 208, 0.5) 100%)', border: '2px solid #8b5a2b' }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-bold" style={{ fontFamily: 'Cinzel, serif', color: '#651321' }}>
                     Option {answer.id.toUpperCase()}
                   </label>
                   <label className="flex items-center space-x-2">
@@ -675,23 +698,29 @@ export default function AddQuestion(): React.ReactElement | null {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleCorrectAnswerChange(e.target.value)
                       }
-                      className="text-[#df7500] focus:ring-[#df7500]"
+                      className="text-[#c04000] focus:ring-[#c04000]"
                     />
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm font-semibold" style={{ color: '#4a2511', fontFamily: 'Crimson Text, serif' }}>
                       Correct Answer
                     </span>
                   </label>
                 </div>
 
                 {/* Answer Text */}
-                <div className="mb-3">
+                <div className="mb-4">
                   <input
                     type="text"
                     value={answer.text}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleAnswerChange(answer.id, "text", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+                    className="w-full p-4 rounded-xl shadow-md font-medium transition-all duration-200"
+                    style={{
+                      fontFamily: 'Crimson Text, serif',
+                      background: 'linear-gradient(135deg, #FFF8E7 0%, #F4E8D0 100%)',
+                      color: '#2a1a11',
+                      border: '2px solid #704214'
+                    }}
                     placeholder={`Enter text for option ${answer.id.toUpperCase()}`}
                   />
                 </div>
@@ -731,14 +760,20 @@ export default function AddQuestion(): React.ReactElement | null {
 
         {/* Action Buttons at the bottom */}
         <div className="p-6 mt-6">
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-4">
             <button
               onClick={() => setShowClearConfirm(true)}
               disabled={isSaving || isClearing}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="flex items-center space-x-2 px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                background: 'linear-gradient(135deg, #e3d5b8 0%, #d4c5a3 100%)',
+                color: '#4a2511',
+                border: '2px solid #8b5a2b'
+              }}
             >
               {isClearing ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#4a2511] border-t-transparent"></div>
               ) : (
                 <RotateCcw size={16} />
               )}
@@ -747,7 +782,7 @@ export default function AddQuestion(): React.ReactElement | null {
             <button
               onClick={handleSave}
               disabled={isSaving || isClearing}
-              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="ancient-button flex items-center space-x-2 px-8 py-3 rounded-lg font-bold shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isSaving ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
