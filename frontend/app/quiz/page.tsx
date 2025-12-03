@@ -1,6 +1,12 @@
 "use client";
-import { Check, ChevronRight, X as XIcon, ArrowRight } from "lucide-react";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Check,
+  ChevronRight,
+  X as XIcon,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { createStudentApi } from "@/interceptors/student";
@@ -24,6 +30,13 @@ interface SelectedAnswers {
   [questionIndex: number]: string;
 }
 
+// Matching backend Attempt schema structure
+interface AttemptData {
+  question: string; // ObjectId
+  answer: string;
+  isCorrect: boolean;
+}
+
 export default function Quiz(): React.JSX.Element | null {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,6 +50,9 @@ export default function Quiz(): React.JSX.Element | null {
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
 
+  // Track history to enable "Review Mode"
+  const [attemptHistory, setAttemptHistory] = useState<AttemptData[]>([]);
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -45,8 +61,7 @@ export default function Quiz(): React.JSX.Element | null {
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [lastSubmissionResult, setLastSubmissionResult] = useState<{
     isCorrect: boolean;
-    correctCount: number; // for total progress
-    totalCount: number;
+    message?: string;
   } | null>(null);
 
   // --- Initial Load ---
@@ -64,70 +79,113 @@ export default function Quiz(): React.JSX.Element | null {
       setCurrentQuestion(Math.max(0, Number(qParam)));
     }
 
-    const fetchQuiz = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const api = await createStudentApi();
         if (!quizId) return;
-        const resp = await api.get(`/quizzes/${quizId}`);
-        const body: any = resp?.data ?? {};
+
+        // 1. Fetch Quiz Data
+        const quizReq = api.get(`/quizzes/${quizId}`);
+        // 2. Fetch User Attempts
+        const attemptsReq = api.get(`/attempts/quiz/${quizId}`);
+
+        const [quizResp, attemptsResp] = await Promise.all([
+          quizReq,
+          attemptsReq,
+        ]);
+
+        const body: any = quizResp?.data ?? {};
         const quiz = body?.quiz;
         const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
 
-        const mapped: QuizQuestion[] = questions.map((q: any, idx: number) => ({
-          id: idx,
-          questionId: q._id ?? q.id ?? null,
-          question: q.question ?? "",
-          image: q.questionImage ?? null,
-          answers: Array.isArray(q.options)
-            ? q.options.map((opt: any) => ({
-                id: (opt.option ?? "").toLowerCase(),
-                text: opt.optionText ?? null,
-                image: opt.optionImage ?? null,
-              }))
-            : [],
-        }));
+        // Map Questions
+        const mappedQuestions: QuizQuestion[] = questions.map(
+          (q: any, idx: number) => ({
+            id: idx,
+            questionId: q._id ?? q.id ?? null,
+            question: q.question ?? "",
+            image: q.questionImage ?? null,
+            answers: Array.isArray(q.options)
+              ? q.options.map((opt: any) => ({
+                  id: (opt.option ?? "").toLowerCase(),
+                  text: opt.optionText ?? null,
+                  image: opt.optionImage ?? null,
+                }))
+              : [],
+          })
+        );
+
+        // Map History
+        const history: AttemptData[] = attemptsResp.data?.data || [];
 
         if (mounted) {
-          setQuizData(mapped);
+          setQuizData(mappedQuestions);
+          setAttemptHistory(history);
+
+          // Pre-fill answers from history if available
+          const preFilled: SelectedAnswers = {};
+          mappedQuestions.forEach((q, idx) => {
+            const attempt = history.find((h) => h.question === q.questionId);
+            if (attempt) {
+              preFilled[idx] = attempt.answer.toLowerCase();
+            }
+          });
+          setSelectedAnswers((prev) => ({ ...prev, ...preFilled }));
+
           setIsAuthenticated(true);
           setLoading(false);
         }
       } catch (err) {
-        console.error("Error fetching quiz:", err);
+        console.error("Error fetching quest data:", err);
         if (mounted) setLoading(false);
       }
     };
 
-    fetchQuiz();
+    fetchData();
 
     return () => {
       mounted = false;
     };
   }, [quizId, status, router, searchParams]);
 
+  // --- Derived State for Current Question ---
+  const currentQuestionData = quizData[currentQuestion];
+
+  // Check if this specific question is already conquered
+  const currentAttempt = attemptHistory.find(
+    (h) => h.question === currentQuestionData?.questionId
+  );
+  const isConquered = currentAttempt?.isCorrect === true;
+
+  const selectedAnswer = selectedAnswers[currentQuestion];
+
+  // Can submit if: An answer is selected AND it's not already conquered AND not currently submitting
+  const canSubmit = !!selectedAnswer && !isConquered && !isSubmitting;
+
   // --- Handlers ---
 
   const handleAnswerSelect = (answerId: string): void => {
+    // Prevent changing answer if already conquered
+    if (isConquered) return;
     setSelectedAnswers((prev) => ({ ...prev, [currentQuestion]: answerId }));
   };
 
   const handleNextQuestion = () => {
     setShowCompletionCard(false);
     const nextIdx = currentQuestion + 1;
+
     if (nextIdx < quizData.length) {
-      // Update URL for history
       router.push(`/quiz?quizId=${quizId}&q=${nextIdx}`);
       setCurrentQuestion(nextIdx);
-      // Clear selection for next question if not previously selected
-      // (Optional based on preference, currently keeping state object)
     } else {
-      // End of quiz, go to map
       router.push(`/quiz-numbers?quizId=${quizId}`);
     }
   };
 
   const handleSubmitQuestion = async (): Promise<void> => {
+    if (isConquered) return; // Double check
+
     setIsSubmitting(true);
     try {
       const api = await createStudentApi();
@@ -145,13 +203,17 @@ export default function Quiz(): React.JSX.Element | null {
 
       const isCorrect = res.data?.isCorrect ?? false;
 
-      // Update state for Modal
-      setLastSubmissionResult({
-        isCorrect,
-        correctCount: 0, // We could fetch actual count if needed, or just show current status
-        totalCount: quizData.length,
-      });
+      // Update local history immediately so UI reflects "Conquered" state without reload
+      setAttemptHistory((prev) => [
+        ...prev.filter((h) => h.question !== currentQ.questionId), // remove old if exists (retry)
+        {
+          question: currentQ.questionId as string,
+          answer: String(answer),
+          isCorrect,
+        },
+      ]);
 
+      setLastSubmissionResult({ isCorrect });
       setShowCompletionCard(true);
     } catch (err) {
       console.warn("Failed to submit attempt:", err);
@@ -159,10 +221,6 @@ export default function Quiz(): React.JSX.Element | null {
       setIsSubmitting(false);
     }
   };
-
-  const currentQuestionData = quizData[currentQuestion];
-  const selectedAnswer = selectedAnswers[currentQuestion];
-  const canSubmit = !!selectedAnswer && !isSubmitting;
 
   if (loading)
     return <AncientLoader fullScreen text="Preparing Your Challenge..." />;
@@ -208,6 +266,18 @@ export default function Quiz(): React.JSX.Element | null {
 
         {/* Question Card */}
         <div className="parchment-card rounded-2xl p-6 mb-6 relative">
+          {/* Visual Indicator for Conquered Questions */}
+          {isConquered && (
+            <div className="absolute -top-4 -right-4 z-20 bg-[#fdf6e3] border-2 border-[#df7500] rounded-full p-2 shadow-xl rotate-12">
+              <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed border-[#df7500] bg-gradient-to-br from-[#df7500]/10 to-transparent">
+                <ShieldCheck className="text-[#df7500] w-10 h-10 mb-1" />
+                <span className="text-[10px] font-bold text-[#651321] uppercase tracking-wider font-serif">
+                  Conquered
+                </span>
+              </div>
+            </div>
+          )}
+
           <img
             src="/corner-decoration.svg"
             alt=""
@@ -261,18 +331,24 @@ export default function Quiz(): React.JSX.Element | null {
                 <button
                   key={answer.id}
                   onClick={() => handleAnswerSelect(answer.id)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                  disabled={isConquered} // Disable clicking if conquered
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left relative ${
                     selectedAnswer === answer.id
                       ? "shadow-md scale-[1.01]"
+                      : isConquered
+                      ? "opacity-60"
                       : "hover:shadow-sm"
-                  }`}
+                  } ${isConquered ? "cursor-default" : "cursor-pointer"}`}
                   style={
                     selectedAnswer === answer.id
                       ? {
-                          borderColor: "#C9A961",
-                          backgroundColor: "rgba(201, 169, 97, 0.15)",
-                          background:
-                            "linear-gradient(135deg, rgba(244, 232, 208, 0.9) 0%, rgba(232, 213, 181, 0.9) 100%)",
+                          borderColor: isConquered ? "#166534" : "#C9A961", // Green border if conquered
+                          backgroundColor: isConquered
+                            ? "rgba(22, 101, 52, 0.1)"
+                            : "rgba(201, 169, 97, 0.15)",
+                          background: isConquered
+                            ? undefined
+                            : "linear-gradient(135deg, rgba(244, 232, 208, 0.9) 0%, rgba(232, 213, 181, 0.9) 100%)",
                         }
                       : {
                           borderColor: "#704214",
@@ -288,8 +364,10 @@ export default function Quiz(): React.JSX.Element | null {
                       style={
                         selectedAnswer === answer.id
                           ? {
-                              borderColor: "#651321",
-                              backgroundColor: "#651321",
+                              borderColor: isConquered ? "#166534" : "#651321",
+                              backgroundColor: isConquered
+                                ? "#166534"
+                                : "#651321", // Green check if conquered
                               borderRadius: "3px",
                               transform: "rotate(3deg)",
                             }
@@ -329,20 +407,45 @@ export default function Quiz(): React.JSX.Element | null {
           </div>
         </div>
 
+        {/* Action Button Area */}
         <div className="mt-6 text-center pb-10">
-          <button
-            className="ancient-button px-8 py-4 rounded-xl font-bold hover:shadow-xl transition-all duration-200"
-            style={{
-              cursor: canSubmit ? "pointer" : "not-allowed",
-              opacity: canSubmit ? 1 : 0.5,
-              fontSize: "1.1rem",
-              letterSpacing: "0.05em",
-            }}
-            onClick={handleSubmitQuestion}
-            disabled={!canSubmit}
-          >
-            {isSubmitting ? "Sealing Fate..." : "Submit Answer"}
-          </button>
+          {isConquered ? (
+            // Review Mode Actions
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => router.push(`/quiz-numbers?quizId=${quizId}`)}
+                className="ancient-button px-8 py-4 rounded-xl font-bold bg-gray-500 hover:bg-gray-600 border-gray-600"
+                style={{ fontSize: "1.1rem" }}
+              >
+                Return to Map
+              </button>
+              {currentQuestion < quizData.length - 1 && (
+                <button
+                  onClick={handleNextQuestion}
+                  className="ancient-button px-8 py-4 rounded-xl font-bold flex items-center gap-2 animate-pulse"
+                  style={{ fontSize: "1.1rem" }}
+                >
+                  <span>Next Challenge</span>
+                  <ArrowRight size={20} />
+                </button>
+              )}
+            </div>
+          ) : (
+            // Submit Mode Action
+            <button
+              className="ancient-button px-8 py-4 rounded-xl font-bold hover:shadow-xl transition-all duration-200"
+              style={{
+                cursor: canSubmit ? "pointer" : "not-allowed",
+                opacity: canSubmit ? 1 : 0.5,
+                fontSize: "1.1rem",
+                letterSpacing: "0.05em",
+              }}
+              onClick={handleSubmitQuestion}
+              disabled={!canSubmit}
+            >
+              {isSubmitting ? "Sealing Fate..." : "Submit Answer"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -401,11 +504,11 @@ export default function Quiz(): React.JSX.Element | null {
                 >
                   {lastSubmissionResult.isCorrect
                     ? "Victorious!"
-                    : "Oh you just missed it!"}
+                    : "Fate Was Unkind"}
                 </h2>
                 <p className="text-[#4A3426] font-serif text-lg">
                   {lastSubmissionResult.isCorrect
-                    ? "Your wisdom serves you well."
+                    ? "Your wisdom serves you well. This Scroll is now Conquered."
                     : "Do not despair. Review the scrolls and try again."}
                 </p>
               </div>
