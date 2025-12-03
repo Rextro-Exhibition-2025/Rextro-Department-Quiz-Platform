@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 /* Ancient Map Theme - Cartographer's Parchment */
 @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Crimson+Text:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap");
-=======
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
->>>>>>> d49ab0e0eb8416b6d5ea3e973030d1afba98eeba
 @import "tailwindcss";
 
 :root {
@@ -190,7 +185,6 @@ h6 {
   }
 }
 
-<<<<<<< HEAD
 .scroll-unfurl {
   animation: unfurl 0.6s ease-out;
   transform-origin: left;
@@ -256,10 +250,4 @@ h6 {
   h3 {
     font-size: 1.25rem;
   }
-=======
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Poppins', Arial, Helvetica, sans-serif;
->>>>>>> d49ab0e0eb8416b6d5ea3e973030d1afba98eeba
 }
