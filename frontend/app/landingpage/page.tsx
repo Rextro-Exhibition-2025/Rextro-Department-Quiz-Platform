@@ -79,7 +79,7 @@ export default function LandingPage() {
             textShadow: '2px 2px 0px rgba(212, 175, 55, 0.3), 4px 4px 8px rgba(0,0,0,0.3)',
             letterSpacing: '0.05em'
           }}>
-            Challenge Your
+            Department
           </h1>
           <h1 className="text-6xl md:text-9xl font-bold mb-6" style={{
             fontFamily: 'Cinzel, serif',
@@ -88,7 +88,7 @@ export default function LandingPage() {
             WebkitTextFillColor: 'transparent',
             filter: 'drop-shadow(2px 2px 0px rgba(212, 175, 55, 0.5))'
           }}>
-            Mind
+            Quest
           </h1>
         </div>
 
