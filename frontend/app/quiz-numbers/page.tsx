@@ -44,14 +44,14 @@ export default function QuizNumbersPage() {
 
         // 1. Fetch Quiz Details (Questions Count)
         const quizRes = await api.get(`/quizzes/${quizId}`);
-        const qData = quizRes.data;
+        const qData = quizRes.data as any;
         const qList = qData.quiz?.questions || [];
         setQuizName(qData.quiz?.name || "Unknown Quest");
         setQuestionCount(qList.length || 10); // Default to 10 if empty, strictly should be list length
 
         // 2. Fetch User Attempts to determine progress
         const attemptsRes = await api.get(`/attempts/quiz/${quizId}`);
-        const userAttempts: Attempt[] = attemptsRes.data.data || [];
+        const userAttempts: Attempt[] = (attemptsRes.data as any).data || [];
         setAttempts(userAttempts);
 
         // 3. Calculate Score (Simple logic: 10 points per correct answer)
