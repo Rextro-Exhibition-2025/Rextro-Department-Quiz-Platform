@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# School Quiz Platform - Frontend
 
-## Getting Started
+A modern, interactive quiz platform built with Next.js 15, featuring separate authentication systems for students and administrators.
 
-First, run the development server:
+## 🚀 Features
 
+- **Student Login**: Traditional form-based authentication for quiz access
+- **Admin Login**: Google OAuth authentication for question management
+- **Interactive Quiz**: Full-screen quiz experience with real-time scoring
+- **Leaderboard**: School rankings and individual scores
+- **Question Management**: Admin panel for adding/editing quiz questions
+- **Responsive Design**: Works on all devices
+
+## 🛠 Tech Stack
+
+- **Next.js 15** with TypeScript
+- **Tailwind CSS** for styling
+- **NextAuth.js** with Google OAuth
+- **Lucide React** for icons
+
+## 🔧 Quick Setup
+
+### 1. Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local` file:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Admin Email Access (comma separated)
+ADMIN_EMAILS=your-email@gmail.com
+```
+### 3. Run Development Server
+```bash
+npm run dev
+```
 
-## Learn More
+## 🔐 Authentication
 
-To learn more about Next.js, take a look at the following resources:
+### Student Access
+- **Route**: `/login`
+- **Method**: Student ID + Password + School selection
+- **Access**: Quiz and leaderboard
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Admin Access
+- **Route**: `/admin-access`
+- **Method**: Google OAuth only
+- **Setup**: Add your email to `ADMIN_EMAILS` in `.env.local`
+- **Access**: Question management panel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Example admin setup:**
+```bash
+# Single admin
+ADMIN_EMAILS=admin@gmail.com
 
-## Deploy on Vercel
+# Multiple admins
+ADMIN_EMAILS=admin@school.edu,teacher@gmail.com
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+frontend/
+├── app/
+│   ├── admin/login/          # Admin Google OAuth
+│   ├── add-question/         # Question management (protected)
+│   ├── login/               # Student login
+│   ├── quiz/                # Quiz interface
+│   ├── leaderboard/         # Results and rankings
+│   └── api/auth/            # NextAuth.js routes
+├── components/              # Reusable components
+└── middleware.ts           # Route protection
+```
+
+## 🚀 Available Scripts
+
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm start           # Production server
+npm run lint        # Code linting
+```
+
+## 🎨 Color Theme
+
+- **Primary Orange**: `#df7500`
+- **Dark Red**: `#651321`
+
+## 🐛 Troubleshooting
+
+**"Access Denied" on admin login:**
+- Verify your email is in `ADMIN_EMAILS`
+- Check Google OAuth credentials
+
+**Environment issues:**
+- Ensure `.env.local` is in frontend root
+- Restart development server after changes
+
+##  Support
+
+For issues, check the troubleshooting section or contact the development team.
