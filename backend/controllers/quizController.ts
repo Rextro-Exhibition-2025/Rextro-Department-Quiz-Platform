@@ -20,10 +20,26 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
       });
 
     const quizObj = quiz.toObject();
-    quizObj.questions = (quizObj.questions || []).map((q: any) => {
-      const { correctOption, ...rest } = q;
-      return rest;
-    });
+
+    // If quiz.questions array is empty or not populated, fetch questions directly
+    if (!quizObj.questions || quizObj.questions.length === 0) {
+      console.log(
+        `Quiz ${quizId} has no populated questions, fetching from Question collection...`
+      );
+      const Question = (await import("../models/Question.js")).default;
+      const questions = await Question.find({ quizId }).lean();
+      console.log(`Found ${questions.length} questions for quiz ${quizId}`);
+      quizObj.questions = questions.map((q: any) => {
+        const { correctOption, ...rest } = q;
+        return rest;
+      });
+    } else {
+      // Remove correctOption from populated questions
+      quizObj.questions = (quizObj.questions || []).map((q: any) => {
+        const { correctOption, ...rest } = q;
+        return rest;
+      });
+    }
 
     return res.status(200).json({ success: true, quiz: quizObj });
   } catch (error) {

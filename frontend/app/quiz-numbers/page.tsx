@@ -48,16 +48,23 @@ export default function QuizNumbersPage() {
         const api = await createStudentApi();
 
         // 1. Fetch Quiz Details (Questions Count)
+        console.log("Fetching quiz with ID:", quizId);
         const quizRes = await api.get(`/quizzes/${quizId}`);
+        console.log("Quiz response:", quizRes.data);
+
         const qData = quizRes.data as {
           quiz?: { questions?: QuestionData[]; name?: string };
         };
         const qList = qData.quiz?.questions || [];
+        console.log("Questions list:", qList);
+        console.log("Questions count:", qList.length);
+
         setQuizName(qData.quiz?.name || "Unknown Quest");
         setQuestions(qList); // Store full questions list with IDs
 
         // 2. Fetch User Attempts to determine progress
         const attemptsRes = await api.get(`/attempts/quiz/${quizId}`);
+        console.log("Attempts response:", attemptsRes.data);
         const userAttempts: Attempt[] =
           (attemptsRes.data as { data?: Attempt[] }).data || [];
         setAttempts(userAttempts);
@@ -68,6 +75,7 @@ export default function QuizNumbersPage() {
         setScore(correctCount * 10);
       } catch (err) {
         console.error("Error fetching quest data:", err);
+        console.error("Error details:", err);
       } finally {
         setLoading(false);
       }
@@ -152,6 +160,38 @@ export default function QuizNumbersPage() {
 
   if (loading)
     return <AncientLoader fullScreen text="Surveying the Realm..." />;
+
+  // Show message if no questions available
+  if (!loading && questions.length === 0) {
+    return (
+      <div
+        className="h-screen w-full flex items-center justify-center"
+        style={{
+          background:
+            "linear-gradient(135deg, #F4E8D0 0%, #FFF8E7 50%, #E8D5B5 100%)",
+        }}
+      >
+        <div className="parchment-card p-8 rounded-2xl max-w-md text-center">
+          <h2
+            className="text-2xl font-bold text-[#651321] mb-4"
+            style={{ fontFamily: "Cinzel, serif" }}
+          >
+            No Questions Available
+          </h2>
+          <p className="text-[#4A3426] mb-6">
+            This quiz does not have any questions yet. Please contact the
+            administrator or try another quiz.
+          </p>
+          <button
+            onClick={() => router.push("/departments")}
+            className="ancient-button px-6 py-3 rounded-xl font-bold"
+          >
+            Return to Quests
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full relative bg-[var(--parchment-light)] overflow-hidden flex flex-col">
