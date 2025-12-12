@@ -14,6 +14,11 @@ interface Attempt {
   quizId: number;
 }
 
+interface QuestionData {
+  _id: string;
+  questionId?: string;
+}
+
 interface QuestionStatus {
   index: number;
   status: "LOCKED" | "OPEN" | "VICTORIOUS" | "TRY_AGAIN";
@@ -24,7 +29,7 @@ export default function QuizNumbersPage() {
   const searchParams = useSearchParams();
   const quizId = searchParams.get("quizId") || "1";
 
-  const [questionCount, setQuestionCount] = useState<number>(0);
+  const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [quizName, setQuizName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -45,11 +50,11 @@ export default function QuizNumbersPage() {
         // 1. Fetch Quiz Details (Questions Count)
         const quizRes = await api.get(`/quizzes/${quizId}`);
         const qData = quizRes.data as {
-          quiz?: { questions?: unknown[]; name?: string };
+          quiz?: { questions?: QuestionData[]; name?: string };
         };
         const qList = qData.quiz?.questions || [];
         setQuizName(qData.quiz?.name || "Unknown Quest");
-        setQuestionCount(qList.length || 10); // Default to 10 if empty, strictly should be list length
+        setQuestions(qList); // Store full questions list with IDs
 
         // 2. Fetch User Attempts to determine progress
         const attemptsRes = await api.get(`/attempts/quiz/${quizId}`);
@@ -72,48 +77,41 @@ export default function QuizNumbersPage() {
   }, [quizId]);
 
   // --- Logic: Determine Status of each Node ---
-  const getQuestionStatus = (
-    index: number,
-    qListLength: number
-  ): QuestionStatus["status"] => {
-    // We assume questions are ordered 0 to N.
-    // We need to map attempts to indices.
-    // Since backend attempts store Question ObjectId, and we don't have the full map here easily without
-    // strictly ordering the quiz questions list, we assume the `quizRes` returns questions in order.
+  const getQuestionStatus = (index: number): QuestionStatus["status"] => {
+    if (index >= questions.length) return "LOCKED";
 
-    // In a robust real-world scenario, you'd match ObjectID.
-    // For this UI, we will approximate: index 0 is open.
-    // If index 0 is correct in attempts, index 1 opens.
+    const questionId = questions[index]._id || questions[index].questionId;
+    if (!questionId) return "LOCKED";
 
-    // NOTE: This logic assumes we fetched the questions list in the exact order
-    // and the user attempts correspond to those IDs.
+    // Check if this specific question has been attempted
+    const attempt = attempts.find((a) => a.question === questionId);
 
-    // Simplified Progressive Logic:
-    // 1. Find if this specific question index was answered correctly.
-    //    (Requires mapping index -> QuestionID from the quiz call, assumed matched here for UI demo)
+    // If user has correctly answered this question
+    if (attempt?.isCorrect) {
+      return "VICTORIOUS";
+    }
 
-    // Since we don't have the Question Object IDs mapped to index in this specific component's state easily
-    // without storing the full question list, let's calculate "Highest Unlocked Level".
+    // If user has attempted but failed
+    if (attempt && !attempt.isCorrect) {
+      return "TRY_AGAIN";
+    }
 
-    const correctAttemptsCount = attempts.filter((a) => a.isCorrect).length;
-
-    // Check if THIS specific node is completed
-    // We are loosely assuming progressive order: if you have 3 correct, you finished 0, 1, 2.
-    // This assumes the user strictly follows order.
-
-    if (index < correctAttemptsCount) return "VICTORIOUS";
-
-    // Check if this is the immediate next one
-    if (index === correctAttemptsCount) {
-      // Check if there is a failed attempt at this current level
-      // If total attempts > correct attempts, implies we tried the current one and failed
-      const totalForThisQuiz = attempts.length;
-      if (totalForThisQuiz > correctAttemptsCount && index < totalForThisQuiz) {
-        return "TRY_AGAIN";
-      }
+    // Check if previous question is completed (progressive unlock)
+    if (index === 0) {
+      // First question is always open
       return "OPEN";
     }
 
+    const prevQuestionId =
+      questions[index - 1]._id || questions[index - 1].questionId;
+    const prevAttempt = attempts.find((a) => a.question === prevQuestionId);
+
+    // If previous question is correct, this one is open
+    if (prevAttempt?.isCorrect) {
+      return "OPEN";
+    }
+
+    // Otherwise it's locked
     return "LOCKED";
   };
 
@@ -131,7 +129,7 @@ export default function QuizNumbersPage() {
     return points;
   };
 
-  const pathPoints = generatePathPoints(questionCount);
+  const pathPoints = generatePathPoints(questions.length);
   const totalMapWidth =
     pathPoints.length > 0
       ? pathPoints[pathPoints.length - 1].x + PADDING_X
@@ -256,9 +254,9 @@ export default function QuizNumbersPage() {
             />
           </svg>
 
-          {Array.from({ length: questionCount }, (_, index) => {
+          {Array.from({ length: questions.length }, (_, index) => {
             const point = pathPoints[index];
-            const status = getQuestionStatus(index, questionCount);
+            const status = getQuestionStatus(index);
             const randomRotate = ((index * 13) % 40) - 20;
             const isLocked = status === "LOCKED";
 
