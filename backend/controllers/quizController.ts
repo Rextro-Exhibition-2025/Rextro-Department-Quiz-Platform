@@ -308,3 +308,22 @@ export const updateQuizSet = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const checkQuizzesAvailable = async (req: Request, res: Response) => {
+  try {
+    // Public endpoint to check if any quizzes exist in the system
+    const quizCount = await Quiz.countDocuments();
+    return res.status(200).json({
+      success: true,
+      available: quizCount > 0,
+      count: quizCount,
+    });
+  } catch (error) {
+    console.error("Error checking quiz availability:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error checking quiz availability",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

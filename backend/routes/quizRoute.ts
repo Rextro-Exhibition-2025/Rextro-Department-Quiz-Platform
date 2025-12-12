@@ -9,6 +9,7 @@ import {
   createQuizSet,
   getQuizSets,
   updateQuizSet,
+  checkQuizzesAvailable,
 } from "../controllers/quizController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { adminOnly } from "../middleware/adminAuthMiddleware.js";
@@ -18,6 +19,9 @@ const QuizRouter = Router();
 QuizRouter.route("/submit-quiz").post(protect, submitQuiz);
 
 QuizRouter.route("/get-leaderboard").get(getLeaderBoard);
+
+// Public endpoint to check if quizzes are available
+QuizRouter.route("/check-availability").get(checkQuizzesAvailable);
 
 QuizRouter.route("/check-quiz-published-status").get(
   adminOnly,
