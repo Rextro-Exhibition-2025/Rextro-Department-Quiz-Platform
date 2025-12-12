@@ -117,7 +117,8 @@ export default function Quiz(): React.JSX.Element | null {
         );
 
         // Map History
-        const history: AttemptData[] = attemptsResp.data?.data || [];
+        const history: AttemptData[] =
+          (attemptsResp.data as { data?: AttemptData[] })?.data || [];
 
         if (mounted) {
           setQuizData(mappedQuestions);
@@ -201,7 +202,8 @@ export default function Quiz(): React.JSX.Element | null {
         answer: String(answer),
       });
 
-      const isCorrect = res.data?.isCorrect ?? false;
+      const isCorrect =
+        (res.data as { isCorrect?: boolean })?.isCorrect ?? false;
 
       // Update local history immediately so UI reflects "Conquered" state without reload
       setAttemptHistory((prev) => [

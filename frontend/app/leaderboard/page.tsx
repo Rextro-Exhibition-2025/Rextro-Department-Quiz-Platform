@@ -1,9 +1,9 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { Trophy, Star, Menu, ChevronDown, X } from 'lucide-react';
-import { createStudentApi } from '@/interceptors/student';
-import { useUser } from '@/contexts/UserContext';
-import { transformLeaderboard } from './leaderboardTransformer';
+import React, { useEffect, useState } from "react";
+import { Trophy, Star, Menu, ChevronDown, X } from "lucide-react";
+import { createStudentApi } from "@/interceptors/student";
+import { useUser } from "@/contexts/UserContext";
+import { transformLeaderboard } from "./leaderboardTransformer";
 
 interface StudentData {
   id: number;
@@ -27,31 +27,22 @@ const Leaderboard: React.FC = () => {
 
   useEffect(() => {
     console.log("callingggggggg");
-    
+
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
-
       try {
-
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const api = await createStudentApi({
+          token: user.user?.authToken || "",
+        });
         const response: any = await api.get(`/quizzes/get-leaderboard`);
 
-        
-        setSchools(transformLeaderboard(response.data.data));
-
+        setSchools(
+          transformLeaderboard((response.data as { data: any })?.data)
+        );
       } catch (error) {
-
-        console.error('Error fetching leaderboard data:', error);
-
+        console.error("Error fetching leaderboard data:", error);
       }
-
-
-  
-
-    
-
-
-    }
+    };
 
     fetchLeaderboard();
   }, []);
@@ -233,9 +224,9 @@ const Leaderboard: React.FC = () => {
 
   const getRankBadgeStyle = (rank: number): string => {
     if (rank <= 3) {
-      return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg transform scale-110';
+      return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg transform scale-110";
     }
-    return 'bg-gray-100 text-gray-600';
+    return "bg-gray-100 text-gray-600";
   };
 
   // lock body scroll and restore on modal close
@@ -245,9 +236,11 @@ const Leaderboard: React.FC = () => {
 
     if (selectedSchool) {
       // compensate for scrollbar width to avoid layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
-      document.body.style.overflow = 'hidden';
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbarWidth > 0)
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPaddingRight;
@@ -262,61 +255,67 @@ const Leaderboard: React.FC = () => {
   return (
     <div
       className="min-h-screen bg-gradient-to-br p-4 relative"
-      style={{ position: 'relative', overflow: 'hidden' }}
+      style={{ position: "relative", overflow: "hidden" }}
     >
       {/* White background container for image */}
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          background: '#FED9DF',
+          width: "100%",
+          height: "100%",
+          background: "#FED9DF",
           zIndex: 0,
         }}
       />
       {/* Background image nested inside white background */}
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
+          width: "100%",
+          height: "100%",
           zIndex: 1,
-          pointerEvents: 'none',
+          pointerEvents: "none",
           backgroundImage: 'url("/Container.png")',
-          backgroundSize: 'auto',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'top',
-          backgroundAttachment: 'scroll',
+          backgroundSize: "auto",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "top",
+          backgroundAttachment: "scroll",
         }}
       />
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'rgba(255,255,255,0.6)',
-        zIndex: 1
-      }} />
-      <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(255,255,255,0.6)",
+          zIndex: 1,
+        }}
+      />
+      <div
+        className="max-w-4xl mx-auto"
+        style={{ position: "relative", zIndex: 2 }}
+      >
         {/* Header */}
         <div className=" mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#651321' }}>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: "#651321" }}>
             Leaderboard
           </h1>
           <p className="text-gray-600">Quiz Rankings</p>
         </div>
 
-
-
         {/* Top 3 Podium */}
         <div className="flex justify-center items-end mb-12 space-x-6">
           {/* Second Place */}
-          <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
+          <div
+            className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56"
+            style={{ borderRadius: "50px" }}
+          >
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_2.png"
@@ -333,7 +332,10 @@ const Leaderboard: React.FC = () => {
           </div>
 
           {/* First Place */}
-          <div className="text-center mb-10 p-10 bg-white shadow-xl flex flex-col items-center justify-center w-56 md:w-72" style={{ borderRadius: '50px' }}>
+          <div
+            className="text-center mb-10 p-10 bg-white shadow-xl flex flex-col items-center justify-center w-56 md:w-72"
+            style={{ borderRadius: "50px" }}
+          >
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_1.png"
@@ -350,7 +352,10 @@ const Leaderboard: React.FC = () => {
           </div>
 
           {/* Third Place */}
-          <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
+          <div
+            className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56"
+            style={{ borderRadius: "50px" }}
+          >
             <div className="relative flex items-center justify-center">
               <img
                 src="/Rank_3.png"
@@ -369,7 +374,10 @@ const Leaderboard: React.FC = () => {
 
         {/* Full Rankings Table */}
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
+          <div
+            className="p-6 border-b flex justify-center items-center"
+            style={{ backgroundColor: "#651321" }}
+          >
             <h2 className="text-xl font-bold text-white">Ranks</h2>
           </div>
 
@@ -383,13 +391,31 @@ const Leaderboard: React.FC = () => {
               >
                 <div className="flex items-center space-x-4">
                   {/* Rank Badge */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${
+                      school.rank <= 3
+                        ? ""
+                        : " " + getRankBadgeStyle(school.rank)
+                    }`}
+                  >
                     {school.rank === 1 ? (
-                      <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
+                      <img
+                        src="/Rank_1.png"
+                        alt="1st Place"
+                        className="w-8 h-8 object-contain"
+                      />
                     ) : school.rank === 2 ? (
-                      <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
+                      <img
+                        src="/Rank_2.png"
+                        alt="2nd Place"
+                        className="w-8 h-8 object-contain"
+                      />
                     ) : school.rank === 3 ? (
-                      <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
+                      <img
+                        src="/Rank_3.png"
+                        alt="3rd Place"
+                        className="w-8 h-8 object-contain"
+                      />
                     ) : (
                       school.rank
                     )}
@@ -406,11 +432,13 @@ const Leaderboard: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   {/* Score */}
                   <div className="text-right">
-                    <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
+                    <span
+                      className="text-2xl font-bold"
+                      style={{ color: "#df7500" }}
+                    >
                       {school.score}
                     </span>
                   </div>
-
                 </div>
               </div>
             ))}
@@ -425,30 +453,42 @@ const Leaderboard: React.FC = () => {
 
             <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 z-10">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b" >
-                <h3 className="font-bold text-lg" style={{ color: '#651321' }}>
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-bold text-lg" style={{ color: "#651321" }}>
                   {selectedSchool.name}
                 </h3>
                 <button
                   onClick={() => setSelectedSchool(null)}
                   className="p-2 hover:bg-white hover:bg-opacity-50 rounded-full transition-colors"
                 >
-                  <X size={20} style={{ color: '#651321' }} />
+                  <X size={20} style={{ color: "#651321" }} />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="p-4" >
+              <div className="p-4">
                 <div className="flex items-center gap-6">
                   {/* Trophy Icon (Left) */}
                   <div>
                     <div>
                       {selectedSchool.rank === 1 ? (
-                        <img src="/Rank_1.png" alt="1st Place" className="w-25 h-25 object-contain" />
+                        <img
+                          src="/Rank_1.png"
+                          alt="1st Place"
+                          className="w-25 h-25 object-contain"
+                        />
                       ) : selectedSchool.rank === 2 ? (
-                        <img src="/Rank_2.png" alt="2nd Place" className="w-25 h-25 object-contain" />
+                        <img
+                          src="/Rank_2.png"
+                          alt="2nd Place"
+                          className="w-25 h-25 object-contain"
+                        />
                       ) : selectedSchool.rank === 3 ? (
-                        <img src="/Rank_3.png" alt="3rd Place" className="w-25 h-25 object-contain" />
+                        <img
+                          src="/Rank_3.png"
+                          alt="3rd Place"
+                          className="w-25 h-25 object-contain"
+                        />
                       ) : (
                         <Trophy size={60} color="#DF7500" />
                       )}
@@ -457,11 +497,17 @@ const Leaderboard: React.FC = () => {
                   {/* Students List (Right) */}
                   <div className="flex-1 space-y-3">
                     {selectedSchool.students.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between py-2 px-3 bg-white bg-opacity-70 rounded-lg">
+                      <div
+                        key={student.id}
+                        className="flex items-center justify-between py-2 px-3 bg-white bg-opacity-70 rounded-lg"
+                      >
                         <span className="text-gray-800 font-medium">
                           {student.name}
                         </span>
-                        <span className="font-bold text-lg" style={{ color: '#df7500' }}>
+                        <span
+                          className="font-bold text-lg"
+                          style={{ color: "#df7500" }}
+                        >
                           {student.score}
                         </span>
                       </div>
@@ -472,10 +518,16 @@ const Leaderboard: React.FC = () => {
                 {/* School Total */}
                 <div className="mt-4 pt-4 border-t border-orange-200">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg" style={{ color: '#651321' }}>
+                    <span
+                      className="font-bold text-lg"
+                      style={{ color: "#651321" }}
+                    >
                       School Total:
                     </span>
-                    <span className="font-bold text-2xl" style={{ color: '#df7500' }}>
+                    <span
+                      className="font-bold text-2xl"
+                      style={{ color: "#df7500" }}
+                    >
                       {selectedSchool.score}
                     </span>
                   </div>
