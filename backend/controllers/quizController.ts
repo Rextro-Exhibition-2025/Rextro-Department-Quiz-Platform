@@ -6,22 +6,18 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);
     if (!Number.isInteger(quizId) || quizId < 1) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid quizId. Must be an integer >= 1.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quizId. Must be an integer >= 1.",
+      });
     }
 
     const quiz = await Quiz.findOne({ quizId }).populate("questions");
     if (!quiz)
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Quiz with quizId ${quizId} not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Quiz with quizId ${quizId} not found.`,
+      });
 
     const quizObj = quiz.toObject();
     quizObj.questions = (quizObj.questions || []).map((q: any) => {
@@ -31,13 +27,11 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
 
     return res.status(200).json({ success: true, quiz: quizObj });
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error fetching quiz",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching quiz",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
@@ -67,12 +61,10 @@ export const submitQuiz = async (req: Request, res: Response) => {
       select: "correctOption",
     });
     if (!quiz)
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Quiz with quizId ${quizId} not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Quiz with quizId ${quizId} not found.`,
+      });
 
     const correctAnswers: { questionId: number; correctOption: string }[] = (
       quiz?.questions ?? []
@@ -94,21 +86,17 @@ export const submitQuiz = async (req: Request, res: Response) => {
       console.error("Error updating user marks:", err);
     }
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Quiz submitted successfully",
-        data: { quizId, score },
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Quiz submitted successfully",
+      data: { quizId, score },
+    });
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error submitting quiz",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Error submitting quiz",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
@@ -133,13 +121,11 @@ export const publishAllQuizzes = async (req: Request, res: Response) => {
   try {
     const result = await Quiz.updateMany({}, { $set: { isPublished: true } });
     console.log("publishAllQuizzes result:", result);
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "All quizzes published successfully.",
-        modifiedCount: (result as any).modifiedCount ?? 0,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "All quizzes published successfully.",
+      modifiedCount: (result as any).modifiedCount ?? 0,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -154,13 +140,11 @@ export const unpublishAllQuizzes = async (req: Request, res: Response) => {
   try {
     const result = await Quiz.updateMany({}, { $set: { isPublished: false } });
     console.log("unpublishAllQuizzes result:", result);
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "All quizzes unpublished successfully.",
-        modifiedCount: (result as any).modifiedCount ?? 0,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "All quizzes unpublished successfully.",
+      modifiedCount: (result as any).modifiedCount ?? 0,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -175,15 +159,18 @@ export const checkQuizzesPublishedStatus = async (
   res: Response
 ) => {
   try {
-    const quiz = await Quiz.findOne({ quizId: 1 });
-    if (!quiz) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Quiz not found." });
+    // Check if any quizzes exist
+    const quizCount = await Quiz.countDocuments();
+    if (quizCount === 0) {
+      // No quizzes exist, return unpublished state
+      return res.status(200).json({ success: true, isPublished: false });
     }
+
+    // Check if any quiz is published
+    const publishedQuiz = await Quiz.findOne({ isPublished: true });
     return res
       .status(200)
-      .json({ success: true, isPublished: quiz.isPublished || false });
+      .json({ success: true, isPublished: !!publishedQuiz });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -200,21 +187,17 @@ export const createQuizSet = async (req: Request, res: Response) => {
     if (quizId !== undefined && quizId !== null) {
       quizId = Number(quizId);
       if (!Number.isInteger(quizId) || quizId < 1) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Invalid quizId. Must be an integer >= 1.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Invalid quizId. Must be an integer >= 1.",
+        });
       }
       const exists = await Quiz.findOne({ quizId });
       if (exists) {
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message: `Quiz with quizId ${quizId} already exists.`,
-          });
+        return res.status(409).json({
+          success: false,
+          message: `Quiz with quizId ${quizId} already exists.`,
+        });
       }
     } else {
       const last = await Quiz.findOne()
@@ -227,22 +210,18 @@ export const createQuizSet = async (req: Request, res: Response) => {
     const newQuiz = new Quiz({ quizId, name, questions, isPublished });
     await newQuiz.save();
 
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "Quiz set created successfully.",
-        quiz: newQuiz,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "Quiz set created successfully.",
+      quiz: newQuiz,
+    });
   } catch (error) {
     console.error("Error creating quiz set:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error creating quiz set",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Error creating quiz set",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
@@ -264,13 +243,11 @@ export const getQuizSets = async (req: Request, res: Response) => {
     return res.status(200).json({ success: true, data: sets });
   } catch (error) {
     console.error("Error listing quiz sets:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error listing quiz sets",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Error listing quiz sets",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
@@ -278,32 +255,26 @@ export const updateQuizSet = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);
     if (!Number.isInteger(quizId) || quizId < 1) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid quizId. Must be an integer >= 1.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quizId. Must be an integer >= 1.",
+      });
     }
 
     const { name } = req.body;
     if (!name || typeof name !== "string" || !name.trim()) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid name. Name must be a non-empty string.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid name. Name must be a non-empty string.",
+      });
     }
 
     const quiz = await Quiz.findOne({ quizId });
     if (!quiz) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Quiz with quizId ${quizId} not found.`,
-        });
+      return res.status(404).json({
+        success: false,
+        message: `Quiz with quizId ${quizId} not found.`,
+      });
     }
 
     quiz.name = name.trim();
@@ -314,12 +285,10 @@ export const updateQuizSet = async (req: Request, res: Response) => {
       .json({ success: true, message: "Quiz set updated successfully.", quiz });
   } catch (error) {
     console.error("Error updating quiz set:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error updating quiz set",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Error updating quiz set",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
