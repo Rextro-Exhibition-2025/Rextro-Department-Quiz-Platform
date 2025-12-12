@@ -10,9 +10,18 @@ COPY package*.json ./
 # Install all dependencies (including devDependencies for building)
 RUN npm ci
 
-# Copy source code and TypeScript config
+# Copy TypeScript config and source code
 COPY tsconfig.json ./
-COPY src ./src
+COPY index.ts ./
+COPY seedRunner.ts ./
+COPY openapi.yaml ./
+COPY question.json ./
+COPY config ./config
+COPY controllers ./controllers
+COPY middleware ./middleware
+COPY models ./models
+COPY routes ./routes
+COPY utils ./utils
 
 # Build TypeScript to JavaScript
 RUN npm run build
@@ -32,6 +41,10 @@ RUN npm ci --omit=dev
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Copy runtime files
+COPY --from=builder /app/openapi.yaml ./
+COPY --from=builder /app/question.json ./
+
 # Create a non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
@@ -42,8 +55,11 @@ RUN chown -R nodejs:nodejs /app
 # Switch to non-root user
 USER nodejs
 
-# Expose the port (adjust if your app uses a different port)
+# Expose the port
 EXPOSE 5000
+
+# Set environment variable for production
+ENV NODE_ENV=production
 
 # Start the application
 CMD ["node", "dist/index.js"]
