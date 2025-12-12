@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AdminMenu from "./AdminMenu";
 
-// Dropdown for Admin Portal
+// Dropdown for Questmaster's Lodge
 import { useState, useRef, useEffect } from "react";
 import { Shield, Menu, X } from "lucide-react";
 import { signIn, signOut } from 'next-auth/react';
@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "", label: "Admin Portal" },
+  { href: "", label: "Questmaster's Lodge" },
 ];
 
 const NavBar = () => {
@@ -67,7 +67,7 @@ const NavBar = () => {
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => {
-            if (link.label === "Admin Portal") {
+            if (link.label === "Questmaster's Lodge") {
               return (
                 <div key={link.href} className="relative">
                     <AdminPortalDropdown session={session} mounted={mounted} />
@@ -155,7 +155,7 @@ const NavBar = () => {
         }}>
           <div className="flex flex-col p-4 gap-4">
             {navLinks.map((link) => {
-              if (link.label === "Admin Portal") {
+              if (link.label === "Questmaster's Lodge") {
                 return (
                   <div key={link.href}>
                       <AdminPortalDropdown session={session} mobile={true} mounted={mounted} />
@@ -273,7 +273,7 @@ const AdminPortalDropdown = ({ session, mobile = false, mounted = false }: { ses
         className={`font-semibold text-gray-700 hover:text-[#a67c52] ${mobile ? 'py-2 pl-3' : 'border-b-2 border-transparent pb-1'} transition-colors flex items-center gap-2`}
         onClick={() => setOpen((v) => !v)}
       >
-        <Shield className="w-5 h-5 text-[#df7500]" /> Admin Portal
+        <Shield className="w-5 h-5 text-[#df7500]" />Questmaster's Lodge
       </button>
           {open && mounted && (
         <div className={`${mobile ? 'relative' : 'absolute right-0'} mt-2 w-full ${mobile ? 'max-w-full' : 'w-80'} bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-0`} style={!mobile ? { minWidth: 320 } : {}}>
@@ -283,7 +283,7 @@ const AdminPortalDropdown = ({ session, mobile = false, mounted = false }: { ses
                 <div className="mx-auto w-12 h-12 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full flex items-center justify-center mb-2">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent">Admin Portal</h1>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent">Questmaster's Lodge</h1>
                 <p className="text-gray-600 text-xs mt-1">Secure access for administrators only</p>
               </div>
               {error && (
@@ -332,8 +332,8 @@ const AdminPortalDropdown = ({ session, mobile = false, mounted = false }: { ses
                 <div className="text-center mb-4">
                   <div className="mx-auto w-12 h-12 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full flex items-center justify-center mb-2">
                     <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent">Admin Portal</h1>
+                  </div>Questmaster's Lodge
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent"></h1>
                   <p className="text-gray-600 text-xs mt-1">Access Denied</p>
                 </div>
                 <div className="mb-4 p-3 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
