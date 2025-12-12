@@ -243,10 +243,14 @@ export const createQuizSet = async (req: Request, res: Response) => {
 
 export const getQuizSets = async (req: Request, res: Response) => {
   try {
-    // Check if request is from admin (admins see all, students only see published)
-    const isAdmin = (req as any).user?.isAdmin || false;
+    // Check if request is from admin (admins see all, public/students only see published)
+    // Note: admin field might be set by adminOnly middleware, otherwise treat as public
+    const isAdmin =
+      (req as any).admin?.email || (req as any).user?.isAdmin || false;
 
-    const filter = isAdmin ? {} : { isPublished: true };
+    // Public users (not authenticated) should only see all quiz sets for leaderboard purposes
+    // We'll return all quizzes for leaderboard display
+    const filter = {}; // Return all quiz sets
     const quizzes = await Quiz.find(filter)
       .select("quizId name isPublished")
       .sort({ quizId: 1 })

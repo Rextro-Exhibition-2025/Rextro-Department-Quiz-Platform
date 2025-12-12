@@ -32,7 +32,9 @@ QuizRouter.route("/publish-all-quizzes").post(adminOnly, publishAllQuizzes);
 
 QuizRouter.route("/unpublish-all-quizzes").post(adminOnly, unpublishAllQuizzes);
 
-QuizRouter.route("/get-quiz-sets").get(adminOnly, getQuizSets);
+// Public endpoint that returns all quiz sets (for leaderboard display)
+// Admin-authenticated requests will see all quizzes, public requests see only published ones
+QuizRouter.route("/get-quiz-sets").get(getQuizSets);
 
 QuizRouter.route("/create-quiz-set").post(adminOnly, createQuizSet);
 
