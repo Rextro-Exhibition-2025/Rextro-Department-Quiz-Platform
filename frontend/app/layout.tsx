@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Ensure a title is present on the client in case app/head.tsx isn't picked up
   useEffect(() => {
     if (!document.title || document.title === window.location.hostname) {
-      document.title = 'Rextro Math Quest';
+      document.title = 'Rextro Engineering Quest';
     }
   }, []);
   return (
