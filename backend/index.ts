@@ -28,7 +28,7 @@ const __dirname = path.dirname(__filename);
 const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
 
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app'], 
+  origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app', 'https://engquest.rextro.lk'], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

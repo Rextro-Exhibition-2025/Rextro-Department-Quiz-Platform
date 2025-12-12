@@ -10,8 +10,7 @@ import { useQuiz } from '@/contexts/QuizContext';
 
 
 export default function ManageQuestions() {
-
-
+	
 	const router = useRouter();
 	const { data: session, status } = useSession();
 	const [questions, setQuestions] = useState<QuestionItem[]>();
