@@ -20,7 +20,7 @@ QuizRouter.route("/submit-quiz").post(protect, submitQuiz);
 QuizRouter.route("/get-leaderboard").get(getLeaderBoard);
 
 QuizRouter.route("/check-quiz-published-status").get(
-  protect,
+  adminOnly,
   checkQuizzesPublishedStatus
 );
 
@@ -28,7 +28,7 @@ QuizRouter.route("/publish-all-quizzes").post(adminOnly, publishAllQuizzes);
 
 QuizRouter.route("/unpublish-all-quizzes").post(adminOnly, unpublishAllQuizzes);
 
-QuizRouter.route("/get-quiz-sets").get(protect, getQuizSets);
+QuizRouter.route("/get-quiz-sets").get(adminOnly, getQuizSets);
 
 QuizRouter.route("/create-quiz-set").post(adminOnly, createQuizSet);
 

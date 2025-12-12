@@ -113,13 +113,18 @@ export const authOptions: AuthOptions = {
           email: token.email,
           name: token.name,
         };
-        if (token.sub) payload.sub = token.sub;
+        // Use 'id' instead of 'sub' to match backend expectations
+        if (token.sub) {
+          payload.id = token.sub;
+          payload.sub = token.sub;
+        }
+        if (token.studentId) payload.studentId = token.studentId;
 
         const customToken = jwt.sign(payload, signSecret || "dev_secret", {
           expiresIn: "15m",
         });
 
-        console.log(customToken, "custom token");
+        console.log("Custom token payload:", payload);
 
         (session as any).token = customToken;
 
